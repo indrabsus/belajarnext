@@ -41,1156 +41,1498 @@ export interface Module {
 export const CURRICULUM_DATA: Module[] = [
   {
     id: "modul-0",
-    slug: "arsitektur-web-dan-tooling",
+    slug: "persiapan-dan-arsitektur-browser",
     level: 0,
-    title: "Modul 0: Arsitektur Browser, Critical Rendering Path & Modern Tooling",
-    tagline: "Bedah mendalam cara kerja engine browser, siklus rendering dari bit data hingga pixel layar, dan standar setup industri.",
-    estimatedTime: "3-4 Hari",
+    title: "Modul 0: Orientasi, Arsitektur Browser & Setup Lingkungan",
+    tagline: "Bedah alur Critical Rendering Path, kerja engine browser, dan konfigurasi VS Code.",
+    estimatedTime: "2-3 Hari",
     color: "slate",
     iconName: "Compass",
-    description: "Sebelum mengetik kode, seorang frontend engineer kelas atas wajib memahami apa yang terjadi di balik layar ketika URL ditekan: DNS resolution, TCP/TLS handshake, penguraian byte menjadi token, pembangunan DOM/CSSOM Tree, hingga perhitungan reflow dan compositing di GPU.",
+    description: "Sebelum mengetik kode pertama, siswa wajib memahami siklus dari byte data hingga pixel di layar, fungsi developer tools, dan standard tooling industri.",
     learningOutcomes: [
-      "Memahami Critical Rendering Path (CRP) secara detail: Parse, DOM Tree, CSSOM Tree, Render Tree, Layout (Reflow), dan Paint (Repaint).",
-      "Memahami perbedaan Render Blocking Resource (CSS & JS) dan dampaknya terhadap Core Web Vitals (FCP, LCP, CLS).",
-      "Memahami mengapa manipulasi DOM manual itu lambat dan alasan konseptual di balik Virtual DOM / React Reconciliation.",
-      "Menguasai Chrome DevTools Performance Profiler, Network Waterfall, dan Memory Leak Inspection.",
-      "Setup lingkungan kerja standar industri: Node.js, strict TypeScript environment, Git semantic branching, dan Prettier/ESLint automations."
+      "Memahami siklus Critical Rendering Path: Parsing, DOM, CSSOM, Render Tree, Layout, Paint, Compositing.",
+      "Mampu menggunakan Chrome DevTools (Elements, Console, Network, dan Device Toolbar).",
+      "Menginstal VS Code dengan ekstensi penting: Live Server, Prettier, Tailwind CSS IntelliSense."
     ],
     topics: [
       {
-        id: "critical-rendering-path",
-        title: "0.1 Anatomi Critical Rendering Path (CRP) di Browser Engine",
-        badge: "Arsitektur Engine",
-        summary: "Bagaimana browser (Blink/V8, Gecko, WebKit) mengubah byte data mentah menjadi pixel nyata di layar.",
-        content: `Ketika browser menerima respon HTTP berupa file HTML, terjadi tahapan berurutan yang disebut **Critical Rendering Path (CRP)**:
-
-1. **Conversion & Tokenization:**
-   Browser membaca raw byte (misal: \`3C 68 74 6D 6C...\`), menerjemahkannya berdasarkan karakter encoding (UTF-8), lalu Tokenizer memecahnya menjadi token-token standar HTML (\`<html>\`, \`<body>\`, \`<div>\`).
-
-2. **DOM Tree Construction:**
-   Token diubah menjadi Node Objek dengan properti spesifik. Berdasarkan relasi sarang (nesting), node-node ini dihubungkan menjadi struktur pohon hierarki: **Document Object Model (DOM)**.
-
-3. **CSSOM Tree Construction (Render-Blocking):**
-   Saat parser menemukan tag \`<link rel="stylesheet">\`, browser mengunduh dan mem-parse aturan CSS menjadi **CSS Object Model (CSSOM)**. CSS bersifat *render-blocking* karena browser menolak menampilkan halaman setengah jadi sebelum mengetahui aturan gaya visual seluruh elemen.
-
-4. **Render Tree Generation:**
-   DOM dan CSSOM digabungkan menjadi **Render Tree**. 
-   > ⚠️ **Catatan Kritis:** Elemen dengan \`display: none\` dan tag metadata (\`<head>\`, \`<script>\`) **TIDAK** masuk ke dalam Render Tree. Namun, elemen dengan \`visibility: hidden\` atau \`opacity: 0\` **tetap masuk** ke Render Tree karena masih memakan ruang geometris!
-
-5. **Layout Phase (Reflow):**
-   Browser menghitung geometri pasti dari setiap node di Render Tree: posisi koordinat (X, Y) dan ukuran presisi (Width, Height) relatif terhadap ukuran viewport layar.
-
-6. **Paint Phase (Repaint):**
-   Mengubah node yang telah memiliki posisi geometri menjadi pixel nyata di layar (mengisi warna background, teks, border, bayangan).
-
-7. **Compositing:**
-   Elemen yang berada di layer terpisah (misal karena \`transform: translateZ()\` atau \`will-change\`) disatukan oleh GPU menjadi gambar akhir di monitor.`,
+        id: "crp-engine",
+        title: "0.1 Bagaimana Browser Mengubah Kode Jadi Website (Critical Rendering Path)",
+        badge: "Teori Mesin",
+        summary: "Perjalanan dari file teks mentah menjadi antarmuka visual di monitor.",
+        content: `Ketika kita membuka file HTML di browser (Chrome/Firefox/Safari):
+1. **Conversion & Tokenization:** Browser membaca raw byte karakter (UTF-8) dan memecahnya menjadi token tag (\`<html>\`, \`<body>\`, \`<h1>\`).
+2. **DOM Tree:** Token disusun menjadi struktur pohon bersarang (Document Object Model).
+3. **CSSOM Tree:** File CSS diuraikan menjadi CSS Object Model. CSS bersifat render-blocking karena browser menolak menampilkan halaman sebelum aturan style siap.
+4. **Render Tree:** Menggabungkan DOM dan CSSOM. Elemen dengan \`display: none\` dibuang dari Render Tree, sedangkan \`visibility: hidden\` tetap dimasukkan.
+5. **Layout / Reflow:** Menghitung koordinat (X, Y) dan ukuran (Width, Height) setiap kotak di layar.
+6. **Paint / Repaint:** Mengisi pixel warna, teks, gambar, dan border.
+7. **Compositing:** Layer-layer yang diproses GPU disatukan menjadi tampilan final.`,
         tips: [
-          "Setiap kali JavaScript memanipulasi geometri elemen (misal membaca offsetHeight atau mengubah width), browser terpaksa memicu Reflow & Repaint ulang. Ini adalah operasi yang sangat mahal dan sering menyebabkan patah-patah (layout jank / FPS drop)."
-        ],
-        pitfalls: [
-          "Jebakan Reflow: Mengakses properti seperti 'element.offsetWidth' berulang-ulang di dalam perulangan (loop) akan memaksa browser melakukan 'Forced Synchronous Layout' yang membuat performa website hancur."
+          "Hindari mengubah geometri elemen berulang-ulang via JavaScript karena memicu Reflow & Repaint yang memberatkan performa."
         ]
       },
       {
-        id: "chrome-devtools-deepdive",
-        title: "0.2 Chrome DevTools Deep Dive: Profiler, Memory, & Network Waterfall",
-        badge: "Diagnostik Industri",
-        summary: "Bukan sekadar 'Inspect Element', melainkan alat analisis performa, memory leak, dan audit Core Web Vitals.",
-        content: `Frontend Engineer profesional menggunakan DevTools sebagai laboratorium diagnosa:
-
-- **Network Tab & Waterfall Analysis:**
-  - **Queueing / Stalled:** Waktu tunggu antrean koneksi HTTP/1.1 (maksimal 6 koneksi simultan per host) vs HTTP/2 multiplexing.
-  - **TTFB (Time to First Byte):** Mengukur kecepatan respon server dan latensi jaringan.
-  - **Content Download:** Mengukur durasi pengunduhan payload data.
-  
-- **Performance Panel & CPU Throttling:**
-  - Menguji performa web dengan menyimulasikan CPU lambat (4x/6x slowdown) dan jaringan lambat (Fast 3G/Slow 3G).
-  - Melacak *Long Tasks* (tugas JavaScript yang berjalan lebih dari 50ms dan memblokir thread interaksi utama pengguna).
-
-- **Console & Memory Heap Snapshot:**
-  - Menginspeksi kebocoran memori (*Memory Leak*) yang disebabkan oleh event listener yang lupa di-remove saat komponen unmount atau referensi closure yang tertahan.`,
-        codeSnippet: {
-          language: "javascript",
-          filename: "memory-leak-example.js",
-          code: `// CONTOH KASUS MEMORY LEAK NYATA YANG SERING DIBUAT PEMULA:
-function attachEventBug() {
-  const bigDataArray = new Array(1000000).fill("Data berat di memori");
-  
-  const handleScroll = () => {
-    // bigDataArray tertahan di memori karena closure
-    console.log("Scrolled, item length:", bigDataArray.length);
-  };
-
-  window.addEventListener("scroll", handleScroll);
-  
-  // BAHAYA: Jika fungsi pembersih removeEventListener tidak dipanggil saat komponen hancur,
-  // bigDataArray tidak akan pernah bisa dibersihkan oleh Garbage Collector!
-}
-
-// SOLUSI BERSIH:
-function attachEventClean() {
-  const handleScroll = () => { /* ... */ };
-  window.addEventListener("scroll", handleScroll);
-
-  // Return fungsi cleanup
-  return () => {
-    window.removeEventListener("scroll", handleScroll);
-  };
-}`
-        }
-      },
-      {
-        id: "tooling-dan-git-workflow",
-        title: "0.3 Standar Lingkungan Koding & Git Branching Strategy",
-        badge: "Workflow Tim",
-        summary: "Mempersiapkan pipeline development modern: ESLint AST rules, Prettier formatting, dan Git Feature Branching.",
-        content: `Di lingkungan perusahaan teknologi, koding dilakukan secara kolaboratif dengan aturan ketat:
-
-1. **Static Analysis & Linters:**
-   - **ESLint:** Menganalisis Abstract Syntax Tree (AST) kode untuk mencegah bug sebelum runtime (misal: mendeteksi variabel tak terpakai atau aturan react hooks yang dilanggar).
-   - **Prettier:** Memastikan seluruh anggota tim memiliki gaya indentasi, koma penutup (*trailing commas*), dan format spasi yang identik 100%.
-
-2. **Git Semantic Workflow (Trunk-Based vs GitFlow):**
-   - Siswa tidak boleh langsung melakukan push ke branch \`main\`.
-   - Setiap fitur baru dibuat di branch terisolasi: \`feature/nama-fitur\` atau \`fix/nama-bug\`.
-   - Menggunakan format commit standar (*Conventional Commits*):
-     - \`feat: menambah validasi form pendaftaran\`
-     - \`fix: memperbaiki bug scrolling horizontal di mobile\`
-     - \`refactor: mengoptimalkan fungsi perhitungan cart\`
-     - \`chore: upgrade dependensi package.json\``,
+        id: "devtools-guide",
+        title: "0.2 Menguasai Chrome DevTools untuk Pemula",
+        badge: "Tool Wajib",
+        summary: "Panel Elements, Console, dan Responsive Device Simulator.",
+        content: `Buka DevTools dengan klik kanan > **Inspect** (atau F12):
+- **Elements Tab:** Menginspeksi DOM, mengedit teks langsung, melihat Box Model di panel kanan.
+- **Console Tab:** Tempat melihat error JavaScript dan menjalankan ekspresi kode langsung.
+- **Toggle Device Toolbar (Ctrl+Shift+M / Cmd+Shift+M):** Mensimulasikan berbagai ukuran layar HP (iPhone, Samsung Galaxy, iPad) untuk uji responsif.`,
         exercise: {
-          title: "Audit Performa Web Publik dengan DevTools",
-          instruction: "Buka DevTools di salah satu website e-commerce populer. Buka panel Performance, aktifkan 4x CPU Slowdown, klik Record, lalu lakukan scroll halaman selama 5 detik. Perhatikan apakah muncul bar merah bertuliskan 'Long Task' di Main Thread.",
-          hint: "Bar warna merah segitiga kecil di timeline menandakan frame rate turun di bawah 60 FPS (terjadi dropped frame)."
+          title: "Uji Coba Inspect Element",
+          instruction: "Buka website favoritmu, klik kanan judul utamanya, pilih Inspect, lalu ganti teksnya di panel Elements menjadi namamu sendiri.",
+          hint: "Double click tepat pada teks di dalam tag HTML di panel Elements."
         }
       }
     ],
     finalProject: {
-      title: "Proyek Modul 0: Laporan Analisis Critical Rendering Path & Audit Profiler",
-      description: "Siswa membuat dokumen teknis singkat hasil audit sebuah website sederhana, mencatat durasi TTFB, jumlah request blocking CSS/JS, dan membuktikan pemahaman lifecycle rendering browser.",
+      title: "Proyek Modul 0: Ceklis Kesiapan Kerja",
+      description: "Pastikan seluruh tools telah terpasang dan siswa memahami alur browser.",
       requirements: [
-        "Mampu menjelaskan diagram alur dari HTML byte hingga GPU Compositing",
-        "Menyertakan screenshot waterfall network dan mengidentifikasi aset terbesar",
-        "Membuktikan setup VS Code dengan ESLint, Prettier, dan Tailwind IntelliSense berjalan aktif",
-        "Membuat 1 repository Git lokal dengan branch terpisah (bukan direct push ke main)"
+        "VS Code terinstal dengan ekstensi Live Server & Prettier",
+        "Node.js LTS terinstal di laptop",
+        "Siswa mampu membuka dan menjelaskan fungsi panel Elements & Console di DevTools"
       ],
-      submissionTip: "Ajarkan siswa membiasakan membaca tab Performance daripada hanya tab Console."
+      submissionTip: "Screenshot VS Code dengan file index.html terbuka di browser via Live Server."
     }
   },
   {
     id: "modul-1",
-    slug: "html5-css-deep-dive",
+    slug: "html5-lengkap-w3schools",
     level: 1,
-    title: "Modul 1: HTML5 Semantik, Aksesibilitas (a11y), & CSS Engine Mendalam",
-    tagline: "Kuasai Specificity, Stacking Context, Matematika Flexbox (Grow/Shrink/Basis), dan CSS Grid 2 Dimensi.",
-    estimatedTime: "2 Minggu",
+    title: "Modul 1: Ensiklopedia HTML5 Lengkap (W3Schools Style)",
+    tagline: "Kuasai seluruh elemen HTML5: Sintaks, Teks, Hyperlink, Gambar, Tabel, Form Lengkap, Semantik, dan Dialog.",
+    estimatedTime: "1-2 Minggu",
     color: "amber",
-    iconName: "Layout",
-    description: "Modul ini membedah mekanisme internal CSS yang sering membingungkan developer selama bertahun-tahun: algoritma kalkulasi spesifisitas, mengapa z-index sering rusak akibat stacking context baru, dan rumus matematika distribusi ruang pada Flexbox.",
+    iconName: "FileCode",
+    description: "Kamus referensi lengkap HTML5 dari A sampai Z. Membahas seluruh tag yang sering dipakai di industri: elemen teks, tabel terstruktur, form input lengkap beserta atribut validasi, multimedia audio/video, hingga elemen modern dialog dan semantik.",
     learningOutcomes: [
-      "Menguasai pohon spesifisitas CSS (Inline > ID > Class/Attribute/Pseudo-class > Element) dan cara menghitung bobotnya.",
-      "Memahami Stacking Context dan properti pemicunya (opacity, transform, filter, will-change, isolation: isolate).",
-      "Menguasai rumus matematika Flexbox: flex-grow, flex-shrink, dan flex-basis dalam menghitung alokasi sisa pixel.",
-      "Membangun layout CSS Grid 2D dinamis: repeat(auto-fit, minmax(...)), grid-template-areas, dan implicit vs explicit grid.",
-      "Mengimplementasikan standar aksesibilitas web WAI-ARIA (aria-label, role, tab-index, keyboard navigable)."
+      "Menguasai anatomi tag HTML, atribut global (id, class, style, title, lang, hidden, data-*).",
+      "Memahami elemen teks, formatting, headings, quote, dan entitas karakter.",
+      "Mampu membuat link navigasi: internal anchor (#id), external, email (mailto:), dan telpon (tel:).",
+      "Menguasai multimedia: img (srcset & lazy loading), picture, video, audio, dan iframe.",
+      "Mampu menyusun tabel terstruktur dengan thead, tbody, tfoot, colspan, dan rowspan.",
+      "Menguasai Form Masterclass: 15+ input types, select, textarea, datalist, fieldset, dan validasi regex.",
+      "Menguasai HTML5 Semantik lengkap: header, nav, main, section, article, aside, footer, details, summary, dialog."
     ],
     topics: [
       {
-        id: "css-specificity-cascade",
-        title: "1.1 Algoritma Spesifisitas CSS & Cascade Resolution",
-        badge: "Mekanisme CSS",
-        summary: "Bagaimana browser menentukan aturan mana yang menang saat terjadi konflik selektor.",
-        content: `Spesifisitas dihitung menggunakan sistem bobot berbasis 4 tingkat angka: \`(Inline, ID, Class, Element)\`:
+        id: "html-anatomi-atribut",
+        title: "1.1 Anatomi Tag HTML & Atribut Global",
+        badge: "Dasar Mutlak",
+        summary: "Tag pembuka, isi, tag penutup, void elements, dan atribut global.",
+        content: `**1. Anatomi Tag:**
+Sebagian besar elemen memiliki tag pembuka, isi, dan tag penutup:
+\`<tag nama-atribut="nilai">Konten</tag>\`
 
-1. **Inline Style (\`style="..."\`):** Bobot \`(1, 0, 0, 0)\` = Menang mutlak terhadap selektor file stylesheet biasa.
-2. **ID Selector (\`#header\`):** Bobot \`(0, 1, 0, 0)\`.
-3. **Class, Pseudo-Class & Attribute (\`.btn\`, \`:hover\`, \`[type="text"]\`):** Bobot \`(0, 0, 1, 0)\`.
-4. **Element & Pseudo-Element (\`div\`, \`h1\`, \`::before\`):** Bobot \`(0, 0, 0, 1)\`.
-5. **Universal Selector (\`*\`), combinator (\`+\`, \`>\`, \`~\`):** Bobot \`(0, 0, 0, 0)\` (tidak menambah spesifisitas).
+**2. Void Elements (Self-closing):**
+Elemen yang tidak memiliki tag penutup dan tidak membungkus teks:
+\`<br>\` (baris baru), \`<hr>\` (garis horizontal), \`<img>\`, \`<input>\`, \`<meta>\`, \`<link>\`.
 
-**Urutan Prioritas Penentuan (The Cascade):**
-1. Origin & Importance (\`!important\` milik browser vs user vs author).
-2. Spesifisitas tertinggi.
-3. Order of Appearance: Jika bobotnya sama persis, aturan yang ditulis paling akhir (paling bawah di file CSS) yang akan menang!`,
+**3. Atribut Global (Bisa dipasang di semua elemen):**
+- \`id\`: Pengenal unik (hanya boleh 1 ID yang sama per halaman).
+- \`class\`: Pengenal kelompok (bisa dipakai berkali-kali untuk styling CSS).
+- \`title\`: Menampilkan tooltip saat kursor melintas di atas elemen.
+- \`hidden\`: Menyembunyikan elemen dari layar.
+- \`tabindex\`: Menentukan urutan navigasi tombol TAB keyboard.
+- \`data-*\`: Atribut custom buatan developer untuk menyimpan data cadangan (misal: \`data-id="101"\`).`,
         codeSnippet: {
-          language: "css",
-          filename: "specificity.css",
-          code: `/* Bobot: (0, 0, 0, 1) - Kalah */
-nav { color: black; }
+          language: "html",
+          filename: "anatomi.html",
+          code: `<!-- Elemen standar dengan atribut -->
+<p id="paragraf-satu" class="teks-tebal" title="Ini keterangan tooltip">
+  Halo dunia, ini paragraf pertama!
+</p>
 
-/* Bobot: (0, 0, 1, 1) - Kalah */
-nav.primary { color: gray; }
+<!-- Void element (tanpa penutup) -->
+<hr>
 
-/* Bobot: (0, 1, 1, 2) - MENANG! */
-#main-nav.primary ul li { color: blue; }
-
-/* HINDARI PENGGUNAAN !important KARENA MERUSAK CASCADE ALGORITHM: */
-/* .button { color: red !important; } */`
-        },
-        pitfalls: [
-          "Penggunaan '!important' adalah hutang teknis (technical debt) terbesar di CSS. Jika kamu butuh menimpa aturan, naikkan spesifisitasnya secara terstruktur atau perbaiki hierarki penulisan class."
-        ]
-      },
-      {
-        id: "stacking-context-zindex",
-        title: "1.2 Misteri Stacking Context & Mengapa z-index Sering Gagal",
-        badge: "Penyebab Bug Terbanyak",
-        summary: "Mengapa elemen dengan z-index: 999999 tetap tertutup oleh elemen ber-z-index: 1?",
-        content: `Banyak pemula mengira seluruh elemen di halaman berbagi satu urutan 3D (Z-axis) yang sama. Ini keliru!
-
-Browser membagi elemen menjadi kelompok-kelompok 3D terisolasi yang disebut **Stacking Context**.
-Jika sebuah elemen berada di dalam Parent Stacking Context dengan prioritas rendah di halaman, anak di dalamnya tidak akan pernah bisa menembus keluar, berapapun nilai \`z-index\` yang diberikan!
-
-**Hal-hal yang Menciptakan Stacking Context Baru:**
-1. Elemen dengan \`position: absolute\` atau \`relative\` dan memiliki nilai \`z-index\` selain \`auto\`.
-2. Elemen dengan \`position: fixed\` atau \`sticky\`.
-3. Elemen dengan \`opacity\` kurang dari \`1\`.
-4. Elemen dengan \`transform\`, \`filter\`, \`perspective\`, atau \`clip-path\` yang aktif.
-5. Elemen yang diberi deklarasi eksplisit: \`isolation: isolate;\` (Teknik modern untuk mencegah z-index bocor).`,
-        codeSnippet: {
-          language: "css",
-          filename: "stacking-context.css",
-          code: `/* KASUS RUSAK: */
-.modal-wrapper {
-  position: relative;
-  z-index: 1; /* Parent ini terkunci di layer 1 */
-}
-
-.modal-content {
-  position: absolute;
-  z-index: 999999; /* PERCUMA! Anak ini tetap berada di dalam layer 1 */
-}
-
-.header-bar {
-  position: relative;
-  z-index: 2; /* Header layer 2 ini akan TETAP MENUTUPI modal-content! */
-}
-
-/* SOLUSI MODERN: Gunakan isolation untuk mengunci stacking context lokal */
-.card-component {
-  isolation: isolate; /* Seluruh z-index anak hanya berlaku di dalam kartu ini saja */
-}`
+<!-- Menyimpan data khusus menggunakan data-* -->
+<div data-user-role="admin" data-user-id="99">
+  Panel Pengguna
+</div>`
         }
       },
       {
-        id: "flexbox-mathematics",
-        title: "1.3 Matematika Flexbox: Alokasi Ruang flex-grow, shrink, & basis",
-        badge: "Algoritma Layout",
-        summary: "Memahami rumus eksak bagaimana flex container mendistribusikan sisa pixel.",
-        content: `Flexbox bukan tebak-tebakan. Ada rumus pasti di baliknya:
+        id: "html-teks-formatting",
+        title: "1.2 Tipografi, Formatting Teks & Entitas Karakter",
+        badge: "Konten Teks",
+        summary: "Heading h1-h6, paragraf, bold/strong, italic/em, mark, del, ins, dan kode sumber.",
+        content: `HTML menyediakan tag spesifik untuk format teks dengan makna (semantik):
 
-Shorthand: \`flex: [flex-grow] [flex-shrink] [flex-basis]\`
+| Tag | Makna / Arti Semantik | Tampilan Default |
+| :--- | :--- | :--- |
+| \`<h1>\` s/d \`<h6>\` | Hierarki Judul (h1 paling utama, hanya 1 per halaman) | Teks besar tebal |
+| \`<p>\` | Paragraf teks | Blok teks dengan margin |
+| \`<strong>\` | Teks sangat penting / darurat | Tebal (Bold) |
+| \`<em>\` | Teks dengan penekanan ucapan | Miring (Italic) |
+| \`<mark>\` | Teks yang distabilo / disorot | Latar belakang kuning |
+| \`<del>\` | Teks yang dicoret (harga lama/dihapus) | Coret tengah (Strikethrough) |
+| \`<ins>\` | Teks tambahan baru (harga diskon) | Garis bawah (Underline) |
+| \`<sub>\` & \`<sup>\` | Subscript (rumus kimia: H₂O) & Superscript (kuadrat: x²) | Teks kecil bawah/atas |
+| \`<code>\` & \`<pre>\` | Potongan kode komputer & Teks preformatted (spasi dipertahankan) | Huruf Monospace |
+| \`<blockquote cite="">\` | Kutipan panjang dari sumber luar | Menjorok ke dalam |
 
-- **\`flex-basis\`:** Ukuran awal elemen di sepanjang Main Axis sebelum ruang kosong didistribusikan.
-- **\`flex-grow\`:** Rasio pembagian **ruang sisa positif** jika ukuran container lebih besar dari total flex-basis anak.
-  - **Rumus:** \`Lebar Tambahan = Ruang Kosong Sisa * (grow_elemen / total_grow)\`
-- **\`flex-shrink\`:** Rasio pemotongan **ruang defisit negatif** jika ukuran container menyempit dan tidak cukup menampung anak-anaknya.
-  - Nilai default \`flex-shrink: 1\` (elemen otomatis menyusut jika sempit).
-  - Berikan \`flex-shrink: 0\` jika elemen TIDAK BOLEH gepeng/menyusut sama sekali (contoh: ikon avatar atau badge).`,
+**Entitas Karakter (Simbol Khusus):**
+- \`&nbsp;\` = Spasi yang tidak memecah baris
+- \`&lt;\` = Simbol lebih kecil (\`<\`)
+- \`&gt;\` = Simbol lebih besar (\`>\`)
+- \`&amp;\` = Simbol ampersand (\`&\`)
+- \`&copy;\` = Simbol Hak Cipta (©)
+- \`&times;\` = Tanda perkalian / silang (×)`,
         codeSnippet: {
-          language: "css",
-          filename: "flex-math.css",
-          code: `.container {
-  display: flex;
-  width: 1000px;
-}
-
-/* Elemen A: basis 200px, grow 1 */
-.item-a {
-  flex: 1 1 200px; 
-}
-
-/* Elemen B: basis 200px, grow 3 */
-.item-b {
-  flex: 3 1 200px; 
-}
-
-/* 
-ANALISIS MATEMATIKA:
-Total basis = 200px + 200px = 400px.
-Sisa ruang kosong = 1000px - 400px = 600px.
-Total grow = 1 + 3 = 4 bagian.
-Nilai per 1 grow = 600px / 4 = 150px.
-
-Ukuran akhir:
-- Item A = 200px + (1 * 150px) = 350px
-- Item B = 200px + (3 * 150px) = 650px
-Total = 350px + 650px = 1000px (Sempurna & Presisi!)
-*/`
+          language: "html",
+          filename: "formatting.html",
+          code: `<article>
+  <h1>Diskon Akhir Tahun!</h1>
+  <p>Harga resmi: <del>Rp 500.000</del> <ins><strong>Rp 250.000</strong></ins></p>
+  <p>Rumus air adalah H<sub>2</sub>O dan rumus luas persegi adalah s<sup>2</sup>.</p>
+  <p>Ingat rumus koding: <code>const nama = "Budi";</code></p>
+  <p>&copy; 2026 Hak Cipta Dilindungi &amp; Aman.</p>
+</article>`
         }
       },
       {
-        id: "css-grid-mastery",
-        title: "1.4 CSS Grid: Responsive Layout 2D Tanpa Media Query",
-        badge: "Modern Grid",
-        summary: "Kombinasi repeat, auto-fit, minmax, dan fractional unit (fr).",
-        content: `Flexbox adalah sistem layout 1 Dimensi (baris ATAU kolom). Sementara **CSS Grid adalah sistem layout 2 Dimensi (baris DAN kolom sekaligus)**.
+        id: "html-links-hyperlinks",
+        title: "1.3 Hyperlink & Navigasi: Eksternal, Internal Anchor, Email & Telpon",
+        badge: "Navigasi",
+        summary: "Tag <a>, atribut href, target=_blank, rel=noopener, mailto:, tel:, dan anchor bookmark (#).",
+        content: `Hyperlink dibuat dengan tag \`<a href="...">\`.
 
-Salah satu pola CSS Grid paling sakti di industri adalah membuat kartu produk otomatis responsif tanpa perlu menulis 1 baris pun \`@media query\`:
+**1. Jenis Nilai pada atribut \`href\`:**
+- **URL Absolut (Eksternal):** \`href="https://google.com"\`
+- **URL Relatif (Internal):** \`href="/tentang.html"\` atau \`href="./kontak.html"\`
+- **Internal Bookmark (Anchor link):** \`href="#section-kontak"\` (langsung scroll ke elemen dengan \`id="section-kontak"\`).
+- **Trigger Aplikasi:**
+  - Kirim Email: \`href="mailto:halo@budi.com?subject=Tanya%20Kursus"\`
+  - Telepon: \`href="tel:+628123456789"\`
+  - WhatsApp: \`href="https://wa.me/628123456789"\`
 
-\`\`\`css
-grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+**2. Atribut Keamanan Wajib untuk Tab Baru:**
+Ketika membuka link di tab baru dengan \`target="_blank"\`, **WAJIB sertakan \`rel="noopener noreferrer"\`** untuk mencegah celah keamanan phishing (*Tabnabbing*).`,
+        codeSnippet: {
+          language: "html",
+          filename: "links.html",
+          code: `<!-- Link ke tab baru yang aman -->
+<a href="https://github.com" target="_blank" rel="noopener noreferrer">
+  Buka GitHub Saya (Tab Baru)
+</a>
+
+<!-- Link kirim email dan telepon -->
+<a href="mailto:admin@sekolah.sch.id">Kirim Email</a>
+<a href="tel:+628123456789">Telepon CS</a>
+
+<!-- Link lompat ke bagian bawah halaman -->
+<a href="#faq-section">Lompat ke Pertanyaan Umum</a>
+<!-- ... konten panjang ... -->
+<section id="faq-section">
+  <h2>Pertanyaan Umum</h2>
+</section>`
+        }
+      },
+      {
+        id: "html-gambar-multimedia",
+        title: "1.4 Gambar & Multimedia: img, picture, audio, video, dan iframe",
+        badge: "Media Modern",
+        summary: "Optimasi alt, loading=lazy, srcset, elemen <video>, <audio>, dan embed <iframe>.",
+        content: `**1. Elemen Gambar \`<img>\`:**
+- \`src\`: Alamat gambar.
+- \`alt\`: Teks deskripsi gambar (**Wajib!** Dibaca oleh tuna netra dan mesin pencari jika gambar gagal dimuat).
+- \`loading="lazy"\`: Menunda download gambar hingga pengguna men-scroll mendekatinya (menghemat kuota!).
+- \`width\` & \`height\`: Memberitahu rasio dimensi ke browser sejak awal untuk mencegah lonjakan layout (*Cumulative Layout Shift - CLS*).
+
+**2. Elemen Responsif \`<picture>\`:**
+Menampilkan format gambar modern (WebP/AVIF) dengan fallback ke JPG:
+\`\`\`html
+<picture>
+  <source srcset="foto.avif" type="image/avif">
+  <source srcset="foto.webp" type="image/webp">
+  <img src="foto.jpg" alt="Pemandangan" loading="lazy">
+</picture>
 \`\`\`
 
-**Cara Kerja Algoritma Ini:**
-1. \`minmax(280px, 1fr)\`: Tiap kolom memiliki lebar minimal 280px. Jika ada sisa ruang, lebarnya boleh melebar proporsional (\`1fr\`).
-2. \`auto-fit\`: Container akan menghitung berapa banyak kolom berukuran minimal 280px yang muat di layar saat ini. Jika muat 4 kolom, dibuat 4 kolom. Jika layar mengecil ke HP sehingga cuma muat 1 kolom, otomatis menjadi 1 kolom tanpa breakpoint manual!`,
+**3. Video & Audio Native:**
+\`\`\`html
+<video controls width="400" poster="cover.jpg">
+  <source src="video.mp4" type="video/mp4">
+  Browser Anda tidak mendukung tag video.
+</video>
+\`\`\`
+
+**4. Iframe (Menyisipkan Web Lain / YouTube / Google Maps):**
+Gunakan atribut \`loading="lazy"\` dan \`title\` untuk aksesibilitas.`,
         codeSnippet: {
-          language: "css",
-          filename: "grid-layout.css",
-          code: `.dashboard-grid {
-  display: grid;
-  /* Responsif otomatis dari 1 kolom di HP hingga 4+ kolom di Desktop */
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-}
+          language: "html",
+          filename: "media.html",
+          code: `<!-- Gambar optimal standar industri -->
+<figure>
+  <img 
+    src="https://images.unsplash.com/photo-1498050108023-c5249f4df085" 
+    alt="Laptop koding di meja kerja"
+    width="600" 
+    height="400" 
+    loading="lazy"
+  >
+  <figcaption>Suasana kerja frontend developer modern.</figcaption>
+</figure>
 
-/* Mengatur tata letak halaman rumit dengan grid-template-areas */
-.app-layout {
-  display: grid;
-  grid-template-areas:
-    "header  header"
-    "sidebar main"
-    "footer  footer";
-  grid-template-columns: 260px 1fr;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100vh;
-}
+<!-- Audio player native -->
+<audio controls>
+  <source src="podcast.mp3" type="audio/mpeg">
+</audio>`
+        }
+      },
+      {
+        id: "html-tabel-terstruktur",
+        title: "1.5 Tabel HTML Terstruktur: thead, tbody, tfoot, colspan, & rowspan",
+        badge: "Data Tabular",
+        summary: "Menyusun data tabular yang rapi dan semantik untuk laporan atau daftar harga.",
+        content: `Tabel di HTML digunakan **hanya untuk data tabular** (bukan untuk membuat tata letak layout web!).
 
-.site-header  { grid-area: header; }
-.site-sidebar { grid-area: sidebar; }
-.site-main    { grid-area: main; }
-.site-footer  { grid-area: footer; }`
+**Struktur Hirarki Tabel Lengkap:**
+- \`<table>\`: Pembungkus utama tabel.
+- \`<caption>\`: Judul/deskripsi tabel.
+- \`<thead>\`: Area kepala tabel.
+- \`<tbody>\`: Area badan konten data tabel.
+- \`<tfoot>\`: Area kaki/rangkuman total data.
+- \`<tr>\` (Table Row): Satu baris horizontal.
+- \`<th>\` (Table Header): Sel judul kolom (otomatis tebal dan di tengah). Atribut \`scope="col"\` atau \`scope="row"\`.
+- \`<td>\` (Table Data): Sel isi data biasa.
+
+**Menggabungkan Kolom & Baris:**
+- \`colspan="2"\`: Menggabungkan 2 kolom horizontal menjadi satu.
+- \`rowspan="2"\`: Menggabungkan 2 baris vertikal menjadi satu.`,
+        codeSnippet: {
+          language: "html",
+          filename: "tabel.html",
+          code: `<table border="1" cellpadding="8">
+  <caption>Daftar Nilai Siswa Frontend</caption>
+  <thead>
+    <tr>
+      <th scope="col">No</th>
+      <th scope="col">Nama Siswa</th>
+      <th scope="col">Nilai HTML</th>
+      <th scope="col">Nilai CSS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Budi Santoso</td>
+      <td>90</td>
+      <td>85</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Siti Rahma</td>
+      <td colspan="2" align="center">95 (Sempurna)</td> <!-- Menggabung 2 kolom -->
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <th colspan="2">Rata-rata Kelas</th>
+      <td colspan="2">90</td>
+    </tr>
+  </tfoot>
+</table>`
+        }
+      },
+      {
+        id: "html-form-masterclass",
+        title: "1.6 Form Input Masterclass: 15+ Tipe Input, Atribut Validasi & Kontrol",
+        badge: "Wajib Interaksi",
+        summary: "Semua varian input, label, select, textarea, datalist, fieldset, dan validasi form bawaan.",
+        content: `Form adalah pintu masuk interaksi pengguna mengirim data ke server.
+
+**1. Elemen Pembungkus:**
+\`<form action="/api/simpan" method="POST" autocomplete="on">\`
+
+**2. Relasi Label & Input (Sangat Penting!):**
+Selalu hubungkan \`<label for="id-input">\` dengan \`<input id="id-input">\`. Ketika teks label diklik, kursor otomatis aktif di dalam kotak input!
+
+**3. Tipe-Tipe Input Populer:**
+- \`type="text"\`: Teks biasa.
+- \`type="password"\`: Teks tersembunyi (bintang/titik).
+- \`type="email"\`: Validasi otomatis format email (@).
+- \`type="number"\`: Angka dengan panah naik/turun (\`min="1" max="100" step="5"\`).
+- \`type="date"\`: Kalender pemilih tanggal bawaan sistem operasi.
+- \`type="color"\`: Color picker pemilih warna hex.
+- \`type="range"\`: Slider penggeser nilai.
+- \`type="checkbox"\`: Pilihan kotak centang (bisa pilih lebih dari satu).
+- \`type="radio"\`: Pilihan bulat (hanya bisa pilih 1 dari kelompok nama yang sama).
+- \`type="file"\`: Unggah dokumen (\`accept=".pdf,.png" multiple\`).
+- \`type="hidden"\`: Data tersembunyi yang ikut terkirim ke server.
+
+**4. Elemen Form Lainnya:**
+- \`<textarea rows="4">\`: Kotak teks panjang multi-baris.
+- \`<select>\` & \`<option>\`: Dropdown menu pilihan.
+- \`<datalist>\`: Kotak input yang memiliki rekomendasi saran autocomplete.
+- \`<fieldset>\` & \`<legend>\`: Mengelompokkan bagian form dalam satu bingkai.`,
+        codeSnippet: {
+          language: "html",
+          filename: "form-lengkap.html",
+          code: `<form action="/submit" method="POST">
+  <fieldset>
+    <legend>Informasi Pribadi</legend>
+    
+    <div>
+      <label for="nama">Nama Lengkap (Wajib):</label>
+      <input type="text" id="nama" name="nama" required minlength="3" placeholder="Contoh: Budi">
+    </div>
+
+    <div>
+      <label for="email">Alamat Email:</label>
+      <input type="email" id="email" name="email" required placeholder="budi@gmail.com">
+    </div>
+
+    <div>
+      <label for="keahlian">Keahlian (Datalist):</label>
+      <input list="daftar-keahlian" id="keahlian" name="keahlian">
+      <datalist id="daftar-keahlian">
+        <option value="HTML5">
+        <option value="CSS3">
+        <option value="Tailwind CSS">
+        <option value="Next.js">
+      </datalist>
+    </div>
+
+    <div>
+      <label for="pesan">Pesan:</label>
+      <textarea id="pesan" name="pesan" rows="3"></textarea>
+    </div>
+
+    <button type="submit">Kirim Formulir</button>
+  </fieldset>
+</form>`
+        }
+      },
+      {
+        id: "html-semantik-dialog",
+        title: "1.7 HTML5 Semantik Lengkap & Tag Modern <dialog>",
+        badge: "Modern Web",
+        summary: "header, nav, main, section, article, aside, footer, details, summary, dan native modal dialog.",
+        content: `**1. Peta Tata Letak Semantik:**
+- \`<header>\`: Bagian pengantar atas (logo, tagline, menu utama).
+- \`<nav>\`: Kumpulan tautan navigasi utama.
+- \`<main>\`: Konten primer halaman (hanya boleh ada 1 tag \`<main>\` per halaman!).
+- \`<section>\`: Bagian tematik dari suatu halaman (sebaiknya memiliki heading).
+- \`<article>\`: Konten mandiri yang bisa disebarkan terpisah (artikel blog, ulasan produk, tweet).
+- \`<aside>\`: Konten pendukung di sisi samping (sidebar, daftar artikel terkait).
+- \`<footer>\`: Informasi penutup (hak cipta, tautan kebijakan privasi).
+
+**2. Elemen Interaktif Tanpa JavaScript:**
+- \`<details>\` & \`<summary>\`: Accordion buka-tutup (FAQ) murni bawaan browser!
+- \`<dialog>\`: Modal popup resmi HTML5 modern yang bisa dibuka dengan perintah JavaScript sederhana: \`dialog.showModal()\`.`,
+        codeSnippet: {
+          language: "html",
+          filename: "semantik-modern.html",
+          code: `<!-- Accordion FAQ tanpa 1 baris pun JavaScript! -->
+<details>
+  <summary><strong>Apakah kursus ini cocok untuk pemula nol?</strong></summary>
+  <p>Sangat cocok! Materi disusun dari dasar HTML, CSS, hingga framework Next.js.</p>
+</details>
+
+<!-- Native Modal Popup Dialog -->
+<dialog id="modal-notif">
+  <h3>Pemberitahuan</h3>
+  <p>Formulir Anda berhasil terkirim.</p>
+  <button onclick="document.getElementById('modal-notif').close()">Tutup</button>
+</dialog>
+
+<button onclick="document.getElementById('modal-notif').showModal()">Buka Modal</button>`
         }
       }
     ],
     finalProject: {
-      title: "Proyek Modul 1: Dashboard UI Multi-Layout Responsif & Bebas Bug Z-Index",
-      description: "Membangun layout dashboard aplikasi web lengkap dengan Header fixed, Collapsible Sidebar, Main View berupa Responsive CSS Grid 2D, dan Floating Modal yang diisolasi dengan stacking context mandiri.",
+      title: "Proyek Modul 1: Portal Formulir Pendaftaran Siswa & Data Tabular Lengkap",
+      description: "Membangun 1 file HTML5 murni tanpa CSS yang mencakup: Struktur semantik lengkap (header, nav, main, footer), tabel daftar kursus dengan thead/tbody/colspan, formulir pendaftaran interaktif (10+ macam input dengan atribut required/min/max/datalist), media gambar responsif, dan accordion FAQ menggunakan <details>.",
       requirements: [
-        "Layout kartu konten menggunakan repeat(auto-fit, minmax(280px, 1fr))",
-        "Komponen Avatar/Badge diproteksi dengan flex-shrink: 0 agar tidak gepeng",
-        "Komponen Floating Modal atau Dropdown Menu menggunakan isolation: isolate",
-        "Lulus uji aksesibilitas: tombol memiliki aria-label dan dapat dinavigasi dengan tombol TAB pada keyboard"
+        "100% lulus uji validasi W3C Validator",
+        "Setiap input form memiliki pasangan <label for='...'> yang terhubung dengan id",
+        "Menggunakan elemen semantik (bukan div soup)",
+        "Menggunakan tabel dengan thead, tbody, th, dan colspan"
       ],
-      submissionTip: "Uji coba dengan mengubah resolusi layar dari 320px sampai 2560px untuk memastikan tidak ada horizontal scrollbar yang bocor."
+      submissionTip: "Uji coba mengklik label teks form: kursor harus otomatis aktif di kotak input terkait."
     }
   },
   {
     id: "modul-2",
-    slug: "javascript-engine-deep-dive",
+    slug: "css-modern-lengkap-w3schools",
     level: 2,
-    title: "Modul 2: JavaScript Engine, Event Loop, Closures, & Async Architecture",
-    tagline: "Bedah V8 Engine: Call Stack, Microtask vs Macrotask, Prototype Chain, AbortController, dan Immutability Patterns.",
-    estimatedTime: "2-3 Minggu",
-    color: "emerald",
-    iconName: "Code2",
-    description: "Modul ini membawa siswa ke balik tirai JavaScript V8 Engine. Siswa akan memahami siklus eksekusi Event Loop, mengapa Promise dieksekusi lebih dulu daripada setTimeout, bagaimana Closures bekerja di level memori, serta teknik menangani asynchronous HTTP request dengan pembatalan request (AbortController).",
+    title: "Modul 2: Ensiklopedia CSS Modern Lengkap (W3Schools Style)",
+    tagline: "Kuasai CSS dari Dasar, Selektor, Warna, Box Model, Position, Flexbox, Grid, Animasi, hingga CSS Variables.",
+    estimatedTime: "2 Minggu",
+    color: "blue",
+    iconName: "Palette",
+    description: "Katalog materi komprehensif CSS3 modern yang diajarkan di W3Schools dan MDN: hierarki selektor, tipografi rem/em, margin collapse, positioning (relative/absolute/fixed/sticky), Flexbox, Grid 2D, transisi, keyframes animasi, dan variabel CSS.",
     learningOutcomes: [
-      "Memahami siklus hidup Event Loop: Call Stack, Web APIs, Microtask Queue (Promise), dan Macrotask Queue (setTimeout/setInterval).",
-      "Menguasai Closures, Lexical Environment, dan penggunaannya dalam Memoization dan Data Encapsulation.",
-      "Memahami binding konteks 'this' (implicit, explicit via call/apply/bind, dan lexical binding pada arrow function).",
-      "Memahami Immutability mendalam: perbandingan Shallow Copy (spread operator / Object.assign) vs Deep Copy (structuredClone).",
-      "Menguasai orkestrasi asinkron tingkat tinggi: Promise.all, Promise.allSettled, penanganan race conditions, dan AbortController."
+      "Memahami 3 cara memasang CSS: External, Internal, Inline.",
+      "Menguasai selektor lanjutan: Combinator (> , +, ~), Attribute Selector, Pseudo-class (:nth-child), dan Pseudo-element (::before, ::after).",
+      "Memahami sistem warna modern: HEX, RGB, HSL, RGBA, dan gradien linear/radial.",
+      "Menguasai satuan ukuran web: px, rem, em, %, vw, vh, dvh, ch, dan fungsi calc()/clamp().",
+      "Menguasai Box Model mendalam, margin collapse, border-box, dan outline.",
+      "Menguasai sistem Position: static, relative, absolute, fixed, sticky, dan stacking context z-index.",
+      "Menguasai Flexbox dan CSS Grid secara tuntas.",
+      "Mampu membuat animasi halus dengan transition, transform, dan @keyframes."
     ],
     topics: [
       {
-        id: "event-loop-concurrency",
-        title: "2.1 Bedah Arsitektur Event Loop: Call Stack vs Microtask vs Macrotask",
-        badge: "Engine V8",
-        summary: "Mengapa JavaScript yang single-threaded bisa menangani ribuan operasi I/O tanpa macet?",
-        content: `JavaScript berjalan di atas **Single Thread** (hanya punya satu Call Stack). Namun, browser menyediakan **Web APIs** (Timer, Fetch, DOM Events) di luar thread JavaScript utama.
+        id: "css-sintaks-selektor",
+        title: "2.1 Sintaks CSS & Selektor Lanjutan (Combinators & Attributes)",
+        badge: "Selektor",
+        summary: "Class, ID, tag, combinator anak (>), tetangga (+), saudara (~), dan selektor atribut.",
+        content: `**1. Tiga Cara Menghubungkan CSS:**
+- **External CSS (Rekomendasi Utama):** \`<link rel="stylesheet" href="style.css">\`
+- **Internal CSS:** Di dalam tag \`<style>\` di dalam \`<head>\`.
+- **Inline CSS:** Atribut \`style="..."\` langsung di elemen (hindari kecuali darurat).
 
-**Aturan Antrean Eksekusi Event Loop:**
-1. **Call Stack:** Mengeksekusi kode sinkron baris demi baris hingga kosong (*LIFO - Last In First Out*).
-2. **Microtask Queue:** Antrean prioritas tinggi. Berisi callback dari \`Promise\` (\`.then\`, \`await\`), \`queueMicrotask\`, dan \`MutationObserver\`.
-3. **Macrotask / Task Queue:** Antrean prioritas standar. Berisi callback dari \`setTimeout\`, \`setInterval\`, dan I/O event.
+**2. Selektor Hubungan (Combinators):**
+- **Descendant (Spasi):** \`div p\` &rarr; Memilih seluruh tag \`<p>\` yang ada di dalam \`<div>\` (anak, cucu, cicit).
+- **Child (\`>\`):** \`div > p\` &rarr; HANYA memilih \`<p>\` yang merupakan anak langsung dari \`<div>\`.
+- **Adjacent Sibling (\`+\`):** \`h2 + p\` &rarr; Memilih tepat SATU tag \`<p>\` yang berada langsung setelah \`<h2>\`.
+- **General Sibling (\`~\`):** \`h2 ~ p\` &rarr; Memilih SEMUA tag \`<p>\` yang berada setelah \`<h2>\` dalam level yang sama.
 
-> ⚡ **HUKUM EVENT LOOP:** 
-> Setiap kali Call Stack kosong, browser akan **MENGURAS HABIS SELURUH Microtask Queue** sebelum mengambil SATU Macrotask berikutnya!`,
+**3. Attribute Selector:**
+- \`input[type="text"]\` &rarr; Memilih hanya input dengan tipe teks.
+- \`a[href^="https"]\` &rarr; Memilih link yang URL-nya diawali dengan "https".
+- \`a[href$=".pdf"]\` &rarr; Memilih link yang berakhiran file PDF.`,
         codeSnippet: {
-          language: "javascript",
-          filename: "event-loop-puzzle.js",
-          code: `console.log("1. Sinkron Pertama");
-
-setTimeout(() => {
-  console.log("2. Macrotask (setTimeout 0ms)");
-}, 0);
-
-Promise.resolve().then(() => {
-  console.log("3. Microtask (Promise)");
-});
-
-queueMicrotask(() => {
-  console.log("4. Microtask Kedua (queueMicrotask)");
-});
-
-console.log("5. Sinkron Terakhir");
-
-/*
-URUTAN OUTPUT YANG TERCETAK DI CONSOLE:
-1. Sinkron Pertama
-5. Sinkron Terakhir
-3. Microtask (Promise)           <-- Microtask dieksekusi SEMUA dulu!
-4. Microtask Kedua (queueMicrotask)
-2. Macrotask (setTimeout 0ms)    <-- Macrotask baru dieksekusi setelah microtask bersih!
-*/`
-        },
-        pitfalls: [
-          "Banyak developer mengira setTimeout(fn, 0) berarti 'jalan dalam 0 detik sekarang juga'. Padahal setTimeout(fn, 0) hanya menjadwalkan eksekusi ke antrean Macrotask yang baru akan dipanggil setelah Call Stack dan SELURUH Promise Microtasks selesai."
-        ]
-      },
-      {
-        id: "closures-and-lexical-scope",
-        title: "2.2 Closures, Lexical Environment, & Practical Memoization",
-        badge: "Pilar Fungsional",
-        summary: "Bagaimana fungsi mengingat variabel di tempat ia dilahirkan, dan implementasi cache fungsi murni.",
-        content: `**Closure** adalah kemampuan sebuah fungsi untuk 'mengingat' dan mengakses variabel dari lingkup leksikal (*Lexical Environment*) tempat fungsi itu dideklarasikan, meskipun fungsi tersebut telah dieksekusi di luar lingkup aslinya.
-
-**Penerapan Nyata di Industri:**
-1. **Private State (Enkapsulasi):** Membuat variabel yang tidak bisa dimodifikasi dari luar secara sembarangan.
-2. **Memoization:** Menyimpan hasil kalkulasi berat dari fungsi murni (*pure function*) ke dalam cache internal agar pemanggilan fungsi berikutnya dengan argumen yang sama langsung mengembalikan hasil tanpa proses hitung ulang.`,
-        codeSnippet: {
-          language: "javascript",
-          filename: "memoize.js",
-          code: `// Implementasi Closure untuk Memoization (Cache Fungsi):
-function createMemoizedFunction(fn) {
-  // Objek cache ini terisolasi di dalam Lexical Scope Closure
-  const cache = new Map();
-
-  return function (...args) {
-    const key = JSON.stringify(args);
-    
-    if (cache.has(key)) {
-      console.log("Mengambil dari cache memori untuk input:", key);
-      return cache.get(key);
-    }
-
-    console.log("Menghitung hasil baru untuk input:", key);
-    const result = fn(...args);
-    cache.set(key, result);
-    return result;
-  };
+          language: "css",
+          filename: "selektor.css",
+          code: `/* Memilih seluruh paragraf anak langsung dari kartu */
+.card > p {
+  color: #334155;
+  line-height: 1.6;
 }
 
-// Simulasi kalkulasi berat:
-const hitungFaktorial = (n) => (n <= 1 ? 1 : n * hitungFaktorial(n - 1));
-const memoizedFaktorial = createMemoizedFunction(hitungFaktorial);
+/* Memilih input yang sedang disabled */
+input[disabled] {
+  background-color: #f1f5f9;
+  cursor: not-allowed;
+}
 
-console.log(memoizedFaktorial(50)); // Menghitung hasil baru...
-console.log(memoizedFaktorial(50)); // Langsung instan dari cache!`
+/* Memberikan ikon khusus untuk link dokumen PDF */
+a[href$=".pdf"]::after {
+  content: " 📄";
+}`
         }
       },
       {
-        id: "immutability-deep-vs-shallow",
-        title: "2.3 Immutability: Jebakan Shallow Copy vs Deep Copy",
-        badge: "Krusial di React",
-        summary: "Mengapa spread operator (...) gagal mengamankan data bertingkat (nested objects).",
-        content: `Di React dan Redux, aturan nomor satu adalah: **State bersifat Immutable (Tidak Boleh Dimutasi Langsung)**.
+        id: "css-warna-background-gradien",
+        title: "2.2 Warna, Background, dan Gradien Spektakuler",
+        badge: "Visual",
+        summary: "HEX, RGB, HSL, RGBA, background-image, background-size cover/contain, dan linear-gradient.",
+        content: `**1. Model Warna di CSS:**
+- **HEX:** \`#3b82f6\` (Merah, Hijau, Biru dalam heksadesimal).
+- **RGB / RGBA:** \`rgba(59, 130, 246, 0.5)\` (A = Alpha/Transparansi dari 0.0 sampai 1.0).
+- **HSL:** \`hsl(217, 91%, 60%)\` (Hue: sudut roda warna 0-360°, Saturation %, Lightness %).
 
-Banyak developer mengira spread operator (\`{ ...obj }\` atau \`[ ...arr ]\`) sudah menyalin seluruh data. **Ini keliru!** Spread operator hanya melakukan **Shallow Copy (Salinan Dangkal Tingkat Pertama)**.
-Jika di dalam objek ada objek lain (*nested object*), referensi memori dari objek dalam tersebut **masih tetap sama**!
+**2. Properti Background:**
+- \`background-color\`: Warna latar.
+- \`background-image: url('gambar.jpg')\`
+- \`background-size\`:
+  - \`cover\`: Gambar mengisi seluruh layar tanpa gepeng (terpotong sebagian jika rasio beda).
+  - \`contain\`: Seluruh gambar terlihat utuh di layar.
+- \`background-position: center\`: Posisi titik tengah gambar.
+- \`background-repeat: no-repeat\`: Mencegah gambar berulang-ulang seperti ubin.
 
-**Solusi Standar Modern:**
-Gunakan fungsi bawaan browser modern: \`structuredClone(data)\` yang aman menangani deep cloning tanpa masalah serialisasi \`JSON.parse(JSON.stringify())\`.`,
+**3. Gradien Warna:**
+\`linear-gradient(direction, color1, color2)\``,
         codeSnippet: {
-          language: "javascript",
-          filename: "immutability.js",
-          code: `const userAsli = {
-  id: 1,
-  nama: "Budi",
-  alamat: { kota: "Jakarta", kodePos: 12345 } // <-- Nested object
-};
+          language: "css",
+          filename: "background.css",
+          code: `.hero-banner {
+  /* Gradien kombinasi warna modern */
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  color: white;
+  padding: 60px 20px;
+  text-align: center;
+}
 
-// SALAH: Shallow Copy dengan spread
-const userShallow = { ...userAsli };
-userShallow.nama = "Andi";               // Aman, userAsli.nama tetap "Budi"
-userShallow.alamat.kota = "Bandung";     // BAHAYA! userAsli.alamat.kota IKUT BERUBAH jadi "Bandung"!
-
-// BENAR: Deep Clone dengan structuredClone bawaan JavaScript modern
-const userDeep = structuredClone(userAsli);
-userDeep.alamat.kota = "Surabaya";        // 100% Terisolasi! userAsli.alamat.kota tetap "Jakarta"`
+.card-cover {
+  background-image: url('https://picsum.photos/800/400');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 250px;
+  border-radius: 12px;
+}`
         }
       },
       {
-        id: "async-abort-controller",
-        title: "2.4 Asynchronous Lanjutan & Pembatalan Request dengan AbortController",
-        badge: "Standar Produksi",
-        summary: "Mencegah Race Conditions dan kebocoran request jaringan saat pengguna berpindah halaman.",
-        content: `Ketika pengguna mengetik di kotak pencarian (*Search Auto-complete*), setiap ketukan huruf memicu request HTTP baru.
-Jika request huruf pertama (lambat) selesai **setelah** request huruf ketiga (cepat), hasil di layar akan menampilkan data lama yang keliru (*Race Condition*).
+        id: "css-satuan-ukuran-tipografi",
+        title: "2.3 Satuan Ukuran Web & Tipografi: px vs rem vs em vs dvh",
+        badge: "Pondasi Ukuran",
+        summary: "Perbedaan ukuran absolut vs relatif, Google Fonts, @font-face, dan rumus clamp().",
+        content: `**1. Satuan Ukuran Absolut vs Relatif:**
+- **\`px\` (Piksel):** Absolut, ukurannya kaku tidak berubah. Baik untuk border tipis (1px).
+- **\`rem\` (Root EM) — STANDAR UTAMA:** Relatif terhadap font size elemen \`<html>\` (default browser: 16px).
+  - 1rem = 16px | 1.5rem = 24px | 2rem = 32px.
+  - *Kenapa wajib pakai rem?* Jika pengguna tunanetra memperbesar settingan font di komputernya, seluruh website kamu otomatis membesar proporsional!
+- **\`em\`:** Relatif terhadap font size elemen induknya langsung (bagus untuk padding tombol yang ikut membesar jika teks tombol membesar).
+- **\`vw\` & \`vh\`:** 1% dari lebar / tinggi viewport monitor.
+- **\`dvh\` (Dynamic Viewport Height):** Solusi modern untuk layar smartphone! Mencegah layout terpotong akibat address bar browser HP yang muncul-tenggelam saat di-scroll.
 
-**Solusi Industri:**
-Gunakan **\`AbortController\`** untuk membatalkan sinyal request yang sedang berjalan ketika ada request baru atau saat komponen di-unmount.`,
+**2. Tipografi Responsif dengan \`clamp()\`:**
+\`font-size: clamp(min, val, max);\`
+Contoh: \`font-size: clamp(1.5rem, 4vw, 3rem);\` &rarr; Teks otomatis mengecil di HP dan membesar halus di Laptop tanpa perlu media query!`,
         codeSnippet: {
-          language: "javascript",
-          filename: "abortController.js",
-          code: `let controllerAktif = null;
+          language: "css",
+          filename: "typography.css",
+          code: `html {
+  font-size: 16px; /* Dasar 1rem */
+}
 
-async function cariProduk(query) {
-  // Jika ada request sebelumnya yang masih 'gantung', batalkan segera!
-  if (controllerAktif) {
-    controllerAktif.abort();
-    console.log("Request pencarian sebelumnya berhasil dibatalkan.");
+/* Judul responsif otomatis tanpa media query */
+h1 {
+  font-size: clamp(1.75rem, 5vw, 3.5rem);
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+/* Mengisi tepat 1 layar penuh di smartphone tanpa bug address bar */
+.full-screen-section {
+  min-height: 100dvh;
+}`
+        }
+      },
+      {
+        id: "css-box-model-margin-collapse",
+        title: "2.4 Box Model, Margin Collapse & Box Sizing",
+        badge: "Konsep Inti",
+        summary: "Content, padding, border, margin, reset wajib border-box, dan fenomena margin collapse.",
+        content: `**1. Reset Wajib Box-Sizing:**
+Secara default (\`box-sizing: content-box\`), jika kamu memberi \`width: 200px\` lalu menambah \`padding: 20px\`, lebar total elemen membengkak jadi **240px**!
+Tambahkan reset ini di baris pertama CSS:
+\`\`\`css
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+\`\`\`
+Dengan \`border-box\`, padding dan border dihitung di DALAM lebar yang ditentukan.
+
+**2. Fenomena Aneh: Margin Collapse:**
+Ketika dua elemen vertikal saling bertemu (misal elemen atas punya \`margin-bottom: 30px\` dan elemen bawah punya \`margin-top: 20px\`), margin mereka **TIDAK DIJUMLAHKAN (50px)**, melainkan **melebur menjadi satu mengambil nilai terbesar (30px)**!
+*Catatan:* Margin collapse HANYA terjadi pada alur vertikal blok biasa, tidak terjadi pada elemen Flexbox atau Grid!`,
+        codeSnippet: {
+          language: "css",
+          filename: "boxmodel.css",
+          code: `* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.box {
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  margin: 20px auto; /* Tengah horizontal */
+}`
+        }
+      },
+      {
+        id: "css-display-position-deep",
+        title: "2.5 Display & Position Masterclass: static, relative, absolute, fixed, sticky",
+        badge: "Tata Letak",
+        summary: "Membedah cara kerja koordinat top, left, right, bottom, dan kunci z-index.",
+        content: `**1. Properti \`display\`:**
+- \`block\`: Menempati 1 baris penuh, bisa diatur width dan height (contoh: div, p, h1).
+- \`inline\`: Mengalir bersama teks, tidak bisa diatur width/height (contoh: span, a, strong).
+- \`inline-block\`: Mengalir sejajar horizontal seperti teks TAPI bisa diatur width & height!
+- \`none\`: Menghapus elemen dari tampilan dan dari alur halaman.
+
+**2. Properti \`position\`:**
+- **\`static\` (Default):** Elemen mengikuti alur dokumen normal (koordinat top/left tidak berfungsi).
+- **\`relative\`:** Elemen tetap berada di alur normal, tapi bisa digeser dari posisi aslinya. Sering dijadikan **titik jangkar (patokan)** untuk anak yang berposisi absolute!
+- **\`absolute\`:** Elemen keluar dari alur dokumen dan melayang bebas. Posisinya dihitung relatif terhadap parent terdekat yang memiliki \`position\` selain static.
+- **\`fixed\`:** Menempel di layar monitor browser pengguna (tidak ikut bergerak saat halaman di-scroll). Cocok untuk tombol WhatsApp atau navbar fixed.
+- **\`sticky\`:** Campuran relative dan fixed! Elemen bergerak normal saat di-scroll, lalu otomatis 'menempel' di layar saat mencapai batas koordinat tertentu (\`top: 0\`).`,
+        codeSnippet: {
+          language: "css",
+          filename: "position.css",
+          code: `/* Trik Populer: Parent Relative, Anak Absolute */
+.card-produk {
+  position: relative; /* Titik patokan jangkar */
+  width: 300px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.badge-diskon {
+  position: absolute;
+  top: 10px;
+  right: 10px;        /* Menempel di pojok kanan atas kartu */
+  background: red;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* Header yang menempel saat di-scroll */
+.navbar-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+}`
+        }
+      },
+      {
+        id: "css-pseudoclasses-elements",
+        title: "2.6 Pseudo-classes & Pseudo-elements: :hover, :nth-child, ::before, ::after",
+        badge: "Interaksi & Hiasan",
+        summary: "Status interaksi pengguna dan trik membuat elemen visual dekoratif tanpa merusak HTML.",
+        content: `**1. Pseudo-classes (Status Khusus Elemen - Diawali satu titik dua \`:\`):**
+- \`:hover\`: Saat kursor mouse melintas di atasnya.
+- \`:focus\` & \`:focus-visible\`: Saat form input aktif atau tombol disorot keyboard TAB.
+- \`:active\`: Saat tombol sedang ditekan klik mouse.
+- \`:first-child\` & \`:last-child\`: Elemen pertama atau terakhir dalam wadah.
+- \`:nth-child(2n)\` / \`:nth-child(odd)\`: Memilih baris genap/ganjil (sangat berguna untuk warna selang-seling tabel striping!).
+- \`:not(.aktif)\`: Memilih seluruh elemen KECUALI yang memiliki class .aktif.
+
+**2. Pseudo-elements (Bagian Tertentu Elemen - Diawali dua titik dua \`::\`):**
+- \`::before\` & \`::after\`: Menyisipkan elemen dekoratif buatan di awal atau akhir konten (WAJIB menyertakan atribut \`content: ""\`).
+- \`::placeholder\`: Mengatur gaya warna teks petunjuk di dalam kotak input.
+- \`::selection\`: Mengatur warna highlight saat teks di halaman diblok mouse oleh pengguna.`,
+        codeSnippet: {
+          language: "css",
+          filename: "pseudo.css",
+          code: `/* Garis aksen cantik di bawah judul menggunakan ::after */
+.judul-seksi {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.judul-seksi::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 50px;
+  height: 4px;
+  background-color: #3b82f6;
+  border-radius: 2px;
+}
+
+/* Warna selang-seling tabel */
+table tr:nth-child(even) {
+  background-color: #f8fafc;
+}`
+        }
+      },
+      {
+        id: "css-flexbox-masterclass",
+        title: "2.7 Flexbox Masterclass Lengkap (Container & Item Properties)",
+        badge: "Wajib Layout",
+        summary: "Main axis, cross axis, justify-content, align-items, flex-wrap, gap, flex-grow, shrink, basis.",
+        content: `Flexbox adalah sistem layout 1 Dimensi (baris ATAU kolom).
+
+**1. Properti untuk Parent (Flex Container):**
+- \`display: flex;\` (atau \`inline-flex\`).
+- \`flex-direction\`: \`row\` (default horizontal), \`column\` (vertikal), \`row-reverse\`.
+- \`flex-wrap\`: \`nowrap\` (memaksa 1 baris), \`wrap\` (otomatis turun ke bawah jika sempit).
+- \`justify-content\` (Alur Utama / Main Axis): \`flex-start\`, \`center\`, \`flex-end\`, \`space-between\`, \`space-around\`, \`space-evenly\`.
+- \`align-items\` (Alur Silang / Cross Axis): \`stretch\` (default), \`center\`, \`flex-start\`, \`flex-end\`.
+- \`gap: 16px;\`: Jarak bersih antar item.
+
+**2. Properti untuk Child (Flex Items):**
+- \`flex-grow: 1\`: Kemampuan membesar mengambil sisa ruang kosong.
+- \`flex-shrink: 0\`: Mencegah elemen mengecil/gepeng saat wadah sempit.
+- \`flex-basis: 250px\`: Ukuran awal elemen sebelum sisa ruang dibagikan.
+- \`align-self\`: Mengatur perataan satu anak khusus agar beda dari saudara-saudaranya.`,
+        codeSnippet: {
+          language: "css",
+          filename: "flexbox-lengkap.css",
+          code: `.kartu-container {
+  display: flex;
+  flex-wrap: wrap; /* Turun ke baris baru jika layar HP */
+  gap: 20px;
+  justify-content: center;
+}
+
+.kartu-item {
+  /* grow: 1, shrink: 1, basis: 280px */
+  flex: 1 1 280px; 
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}`
+        }
+      },
+      {
+        id: "css-grid-masterclass",
+        title: "2.8 CSS Grid Masterclass: 2 Dimensi Baris & Kolom",
+        badge: "Grid Modern",
+        summary: "grid-template-columns, fr unit, repeat, auto-fit, minmax, dan grid-template-areas.",
+        content: `Jika Flexbox untuk 1 dimensi, **CSS Grid adalah penguasa layout 2 Dimensi (baris dan kolom sekaligus)**.
+
+**Konsep Utama:**
+- \`display: grid;\`
+- \`grid-template-columns: 1fr 2fr 1fr;\`: Membagi menjadi 3 kolom dengan rasio pecahan (\`fr\` = fraction).
+- \`repeat(3, 1fr)\`: Penulisan singkat untuk membuat 3 kolom berukuran sama rata.
+- \`repeat(auto-fit, minmax(250px, 1fr))\`: Pola sakti membuat kolom produk otomatis responsif tanpa media query!
+- \`grid-column: 1 / 3\`: Elemen melebar dari garis kolom 1 sampai garis 3 (memakan 2 kolom).`,
+        codeSnippet: {
+          language: "css",
+          filename: "grid.css",
+          code: `.galeri-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+/* Banner promosi yang memakan 2 kolom sekaligus */
+.item-unggulan {
+  grid-column: span 2;
+}`
+        }
+      },
+      {
+        id: "css-animasi-transisi",
+        title: "2.9 Transisi, Transformasi, dan Animasi Keyframes",
+        badge: "Animasi Halus",
+        summary: "transition property, duration, timing-function, transform (scale, rotate, translate), dan @keyframes.",
+        content: `**1. CSS Transitions (Animasi Antara Dua Status):**
+\`transition: [property] [duration] [timing-function] [delay];\`
+Contoh: \`transition: all 0.3s ease-in-out;\`
+
+**2. CSS Transform (Manipulasi Bentuk/Posisi 2D):**
+- \`transform: scale(1.05);\`: Memperbesar ukuran 5%.
+- \`transform: translateY(-5px);\`: Mengangkat elemen ke atas 5 pixel.
+- \`transform: rotate(45deg);\`: Memutar 45 derajat.
+
+**3. Animasi Mandiri Berkelanjutan (\`@keyframes\`):**
+Membuat animasi yang berjalan otomatis tanpa perlu kursor hover pengguna.`,
+        codeSnippet: {
+          language: "css",
+          filename: "animasi.css",
+          code: `/* Tombol interaktif dengan transisi halus */
+.btn-modern {
+  background-color: #3b82f6;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-modern:hover {
+  background-color: #2563eb;
+  transform: translateY(-2px); /* Efek tombol melayang naik */
+}
+
+/* Animasi Putar Loading Spinner */
+@keyframes putar {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 30px;
+  height: 30px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: putar 1s linear infinite;
+}`
+        }
+      },
+      {
+        id: "css-variabel-kalkulasi",
+        title: "2.10 CSS Variables (Custom Properties) & Fungsi Matematika calc()",
+        badge: "Standar Masa Kini",
+        summary: "Mendeklarasikan variabel --warna-utama, var(), dan rumus perhitungan dinamis calc().",
+        content: `**1. Variabel CSS Native (Custom Properties):**
+Dideklarasikan dengan awalan dua strip \`--\` di dalam selektor \`:root\` agar bisa diakses di seluruh file:
+\`\`\`css
+:root {
+  --primary-color: #3b82f6;
+  --radius-card: 16px;
+}
+
+.tombol {
+  background-color: var(--primary-color);
+  border-radius: var(--radius-card);
+}
+\`\`\`
+*Keuntungan Dahsyat:* Ketika ingin membuat Dark Mode, kamu cukup mengganti nilai variabel di satu tempat!
+
+**2. Fungsi Matematika \`calc()\`, \`min()\`, \`max()\`, \`clamp()\`:**
+Menghitung ukuran campuran antar satuan yang berbeda:
+\`width: calc(100% - 40px);\` (lebar penuh dikurangi 40px).`,
+        codeSnippet: {
+          language: "css",
+          filename: "variables.css",
+          code: `:root {
+  --bg-color: #ffffff;
+  --text-color: #0f172a;
+  --primary: #2563eb;
+}
+
+/* Mengubah variabel saat mode gelap */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #0f172a;
+    --text-color: #f8fafc;
+    --primary: #60a5fa;
   }
+}
 
-  // Buat controller baru untuk request yang sekarang
-  controllerAktif = new AbortController();
-  const { signal } = controllerAktif;
-
-  try {
-    const res = await fetch(\`https://dummyjson.com/products/search?q=\${query}\`, { signal });
-    const data = await res.json();
-    console.log("Hasil pencarian terkini:", data.products);
-  } catch (err) {
-    if (err.name === "AbortError") {
-      console.log("Request dibatalkan secara sengaja oleh AbortController.");
-    } else {
-      console.error("Error jaringan sungguhan:", err);
-    }
-  }
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }`
         }
       }
     ],
     finalProject: {
-      title: "Proyek Modul 2: Modul Data-Fetching Engine dengan Cache & Debounce AbortController",
-      description: "Membangun fungsi data-fetching mandiri yang memiliki fitur: Debounce otomatis 300ms, AbortController untuk membatalkan request lama yang belum selesai, dan in-memory cache menggunakan Closures.",
+      title: "Proyek Modul 2: Website Katalog Produk Responsif dengan Animasi & CSS Variables",
+      description: "Membangun 1 website landing page lengkap murni CSS3: Header sticky dengan navbar, Hero banner gradien, Grid galeri produk responsif menggunakan repeat(auto-fit, minmax(280px, 1fr)), efek kartu melayang dengan transition/transform, kartu diskon dengan position absolute, serta mendukung Dark Mode menggunakan CSS Variables.",
       requirements: [
-        "Mencegah Race Condition saat user mengetik cepat dengan AbortController",
-        "Menyimpan hasil response API di dalam Map cache closure",
-        "Menangani Promise rejections dan membedakan jenis error AbortError vs NetworkError",
-        "100% menggunakan structuredClone untuk mutasi data array"
+        "100% menggunakan CSS murni (tanpa framework)",
+        "Menggunakan sistem Flexbox dan CSS Grid pada tempat yang tepat",
+        "Menggunakan satuan rem dan variabel CSS (--primary, --bg)",
+        "Memiliki efek transisi hover pada tombol dan kartu",
+        "Responsif di layar HP (360px) tanpa scroll horizontal bocor"
       ],
-      submissionTip: "Buka tab Network di DevTools saat mengetik cepat; siswa harus melihat status 'canceled' pada request sebelumnya yang tertimpa."
+      submissionTip: "Uji coba toggle dark mode di sistem operasi laptopmu dan pastikan warna website berubah otomatis berkat CSS Variables."
     }
   },
   {
     id: "modul-3",
-    slug: "tailwind-arsitektur-dan-design-system",
+    slug: "javascript-modern-es6-lengkap",
     level: 3,
-    title: "Modul 3: Tailwind CSS v4 & Arsitektur Design System Skalabel",
-    tagline: "Kuasai Tailwind v4 CSS Variables integration, CVA (Class Variance Authority), cn() utility, dan Component Library patterns.",
+    title: "Modul 3: JavaScript Modern (ES6+) & Engine V8",
+    tagline: "Variabel const/let, Arrow Function, Array Methods (.map/.filter), Destructuring, Async/Await, dan Event Loop.",
     estimatedTime: "2 Minggu",
-    color: "cyan",
-    iconName: "Palette",
-    description: "Tailwind CSS bukan hanya kumpulan class singkat. Di modul ini siswa belajar cara merancang Design System berskala perusahaan (seperti shadcn/ui): arsitektur token warna berbasis CSS variables, kombinasi library CVA untuk varian komponen yang type-safe, serta manipulasi class anti-bentrok menggunakan tailwind-merge.",
+    color: "emerald",
+    iconName: "Code2",
+    description: "Fondasi logika sebelum masuk ke React dan Next.js. Siswa menguasai sintaks modern ES6, manipulasi array of objects, asinkronisasi data internet via Fetch API, hingga pemahaman Event Loop V8.",
     learningOutcomes: [
-      "Memahami arsitektur Tailwind CSS v4 yang baru berbasis CSS Variables dan deklarasi @theme/@utility.",
-      "Menguasai Class Variance Authority (CVA) untuk membuat varian komponen (Primary, Destructive, Outline, Ghost).",
-      "Memahami fungsi utilitas sakti cn() (kombinasi clsx + tailwind-merge) untuk menyelesaikan bentrok prioritas class.",
-      "Menguasai teknik Child Selector [&>p], Data Attribute states [data-state=open], dan nested groups (group/sidebar).",
-      "Membangun satu set UI Library mandiri (Button, Input, Modal, Badge) yang siap digunakan di React & Next.js."
+      "Menguasai const, let, template literals, dan arrow function.",
+      "Menguasai fungsi sakti array: .map(), .filter(), .find(), .reduce().",
+      "Menguasai Object/Array Destructuring dan Rest/Spread Operator (...).",
+      "Menguasai Asynchronous JS: Promise, async/await, dan pengambilan data via fetch().",
+      "Memahami Event Loop: Call Stack, Microtasks (Promise), dan Macrotasks (setTimeout)."
     ],
     topics: [
       {
-        id: "tailwind-v4-architecture",
-        title: "3.1 Arsitektur Tailwind v4 & Integrasi CSS Variables Modern",
-        badge: "Generasi Baru v4",
-        summary: "Mengapa Tailwind v4 tidak lagi butuh tailwind.config.js dan langsung menyatu dengan CSS native.",
-        content: `Tailwind CSS v4 dibangun ulang dari nol menggunakan engine baru (Oxide engine berbasis Rust) yang mem-parse CSS 10x lebih cepat.
-Di v4, konfigurasi tidak lagi ditulis di file JavaScript terpisah (\`tailwind.config.js\`), melainkan langsung di dalam file CSS utama menggunakan direktif:
+        id: "js-es6-dasar",
+        title: "3.1 Variabel Modern, Template Literals & Arrow Function",
+        badge: "Sintaks ES6",
+        summary: "Perbedaan const vs let, template literal `${var}`, dan kelebihan arrow function.",
+        content: `**1. Variabel Modern:**
+- \`const\`: Untuk nilai tetap yang tidak di-assign ulang (gunakan secara default).
+- \`let\`: Untuk nilai yang akan diubah (misal: loop counter).
+- Jangan gunakan \`var\` lagi karena memiliki masalah hoisting dan function scoping yang rawan bug.
 
-1. **\`@import "tailwindcss";\`**: Memuat seluruh utilitas Tailwind secara otomatis.
-2. **\`@theme { ... }\`**: Mendeklarasikan token sistem desain (warna primer, radius, font) menggunakan CSS variables native.
-3. Keuntungannya: Kamu bisa mengubah variabel tema secara dinamis saat runtime (misal saat ganti tema Dark/Light) tanpa perlu rebuild JavaScript!`,
+**2. Template Literals:**
+Gunakan tanda backtick (\`\`) untuk menggabungkan variabel dan teks tanpa repot tanda tambah (+):
+\`const pesan = \`Halo \${nama}, umurmu \${umur} tahun\`;\`
+
+**3. Arrow Function:**
+Bentuk fungsi ringkas masa kini:
+\`const tambah = (a, b) => a + b;\``,
         codeSnippet: {
-          language: "css",
-          filename: "app/globals.css",
-          code: `@import "tailwindcss";
+          language: "javascript",
+          filename: "es6-dasar.js",
+          code: `const nama = "Budi";
+const role = "Frontend Engineer";
 
-@theme {
-  --color-brand-primary: #2563eb;
-  --color-brand-accent: #10b981;
-  --radius-custom: 1rem;
-}
+// Arrow function satu baris dengan template literal
+const sapaPengguna = (n, r) => \`Selamat datang \${n}, Anda login sebagai \${r}.\`;
 
-/* Menggunakan CSS variables untuk dark mode dinamis */
-:root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    --foreground: #f8fafc;
-  }
-}`
+console.log(sapaPengguna(nama, role));`
         }
       },
       {
-        id: "cva-and-cn-utility",
-        title: "3.2 Standar Industri: Helper cn() & Class Variance Authority (CVA)",
-        badge: "Pola shadcn/ui",
-        summary: "Cara profesional membuat komponen React dengan ratusan kombinasi varian warna dan ukuran tanpa konflik class.",
-        content: `Ketika kita membuat komponen tombol yang fleksibel, kita ingin pengguna bisa mengubah warna: \`<Button variant="danger" size="sm" className="p-8">Click</Button>\`.
+        id: "js-array-methods-sakti",
+        title: "3.2 Array Methods Sakti: .map(), .filter(), .reduce(), .find()",
+        badge: "Tulang Punggung React",
+        summary: "Metode fungsional memanipulasi data tanpa mengubah data asli (immutability).",
+        content: `Di React dan Next.js, 90% manipulasi data tampilan menggunakan 2 fungsi ini:
+1. **\`.map()\`:** Mengubah setiap item array menjadi item baru (misal: mengubah data objek produk menjadi elemen kartu JSX).
+2. **\`.filter()\`:** Menyaring data berdasarkan syarat tertentu (misal: pencarian produk atau hapus data).
+3. **\`.find()\`:** Mengambil 1 item pertama yang cocok.
+4. **\`.reduce()\`:** Mengakumulasi seluruh nilai array menjadi 1 nilai akhir (misal: menghitung total harga keranjang).`,
+        codeSnippet: {
+          language: "javascript",
+          filename: "arrayMethods.js",
+          code: `const produk = [
+  { id: 1, nama: "Laptop", harga: 8000000, stok: 5 },
+  { id: 2, nama: "Mouse", harga: 150000, stok: 0 },
+  { id: 3, nama: "Keyboard", harga: 500000, stok: 10 }
+];
 
-**Masalah Besar:**
-Jika di dalam tombol ada class default \`p-4\`, dan dari luar dikirim prop \`className="p-8"\`, class mana yang menang?
-Di CSS biasa, pemenangnya ditentukan oleh urutan file CSS, BUKAN urutan teks di atribut class! Bisa saja \`p-4\` yang menang dan \`p-8\` diabaikan.
+// 1. Ambil hanya produk yang ada stoknya (.filter)
+const produkTersedia = produk.filter((p) => p.stok > 0);
 
-**Solusi Standar Industri (dipakai shadcn/ui & Radix UI):**
-1. **\`clsx\`**: Menggabungkan class secara kondisional berdasarkan boolean.
-2. **\`tailwind-merge\`**: Secara cerdas mengetahui bahwa \`p-8\` menimpa \`p-4\`, sehingga \`p-4\` otomatis dihapus dari string akhir!
-3. Kombinasi keduanya disatukan dalam fungsi sakti: **\`cn()\`**.`,
+// 2. Format teks harga produk (.map)
+const daftarHarga = produkTersedia.map((p) => \`\${p.nama}: Rp \${p.harga.toLocaleString()}\`);
+console.log(daftarHarga);
+
+// 3. Hitung total nilai inventaris (.reduce)
+const totalAset = produk.reduce((total, p) => total + (p.harga * p.stok), 0);
+console.log("Total Aset Toko: Rp", totalAset.toLocaleString());`
+        }
+      },
+      {
+        id: "js-destructuring-spread",
+        title: "3.3 Destructuring & Spread Operator (...) pada Objek & Array",
+        badge: "Paling Populer",
+        summary: "Mengekstrak data bersih dan membuat salinan data baru tanpa mutasi.",
+        content: `**1. Destructuring:**
+Membongkar isi properti objek langsung ke nama variabel:
+\`const { judul, harga } = produk;\`
+
+**2. Spread Operator (\`...\`):**
+Membuka isi bungkusan array atau objek untuk digabungkan dengan data baru:
+\`const updateHarga = { ...produk, harga: 7500000 };\``,
+        codeSnippet: {
+          language: "javascript",
+          filename: "spread.js",
+          code: `const user = { id: 1, nama: "Andi", kota: "Jakarta" };
+
+// Destructuring
+const { nama, kota } = user;
+console.log(nama, kota);
+
+// Menambah data array secara immutable
+const listLama = ["Tugas 1", "Tugas 2"];
+const listBaru = [...listLama, "Tugas 3"];
+console.log(listBaru);`
+        }
+      },
+      {
+        id: "js-async-fetch-eventloop",
+        title: "3.4 Asynchronous JS, Fetch API, & Arsitektur Event Loop",
+        badge: "Koneksi API",
+        summary: "Promise, async/await, mengambil data JSON publik, dan pemahaman urutan eksekusi.",
+        content: `JavaScript berjalan single-threaded. Saat mengambil data dari server internet, kita menggunakan \`async\` dan \`await\` agar browser tidak hang membeku saat menunggu respon server.
+
+**Siklus Event Loop:**
+Kode sinkron &rarr; Microtasks (\`Promise\`, \`await\`) &rarr; Macrotasks (\`setTimeout\`).`,
+        codeSnippet: {
+          language: "javascript",
+          filename: "fetchAsync.js",
+          code: `// Mengambil data dari API publik secara asinkron
+async function ambilDataUser() {
+  try {
+    const respon = await fetch("https://dummyjson.com/users?limit=3");
+    if (!respon.ok) throw new Error("Gagal mengambil data dari server");
+    
+    const data = await respon.json();
+    console.log("Daftar Pengguna:", data.users);
+  } catch (err) {
+    console.error("Terjadi Error:", err.message);
+  }
+}
+
+ambilDataUser();`
+        }
+      }
+    ],
+    finalProject: {
+      title: "Proyek Modul 3: Dashboard Data Publik dengan Filter & Pencarian Instan",
+      description: "Membuat aplikasi web yang mengambil data dari REST API publik (misal DummyJSON), menampilkan daftar kartu produk dengan .map(), menyediakan input pencarian real-time dengan .filter(), dan menghitung total harga dengan .reduce().",
+      requirements: [
+        "Data diambil menggunakan async/await dan fetch() dengan penanganan try/catch",
+        "Menampilkan status Loading saat data sedang diunduh",
+        "Fitur pencarian instan memfilter array tanpa merusak data asli",
+        "100% menggunakan sintaks ES6 (const, arrow function, destructuring)"
+      ],
+      submissionTip: "Coba simulasikan jaringan Offline di DevTools tab Network untuk menguji apakah pesan error ditangkap dengan baik oleh try/catch."
+    }
+  },
+  {
+    id: "modul-4",
+    slug: "tailwind-css-v4-mastery",
+    level: 4,
+    title: "Modul 4: Tailwind CSS v4 & Arsitektur Design System",
+    tagline: "Styling utility-first cepat, sistem breakpoint, token desain @theme, dan helper cn() / CVA.",
+    estimatedTime: "1-2 Minggu",
+    color: "cyan",
+    iconName: "Palette",
+    description: "Setelah paham CSS murni, siswa belajar Tailwind CSS v4: utility-first, token variabel desain, responsive breakpoints (sm/md/lg), pseudo-classes, dan teknik komponen reusable bebas konflik dengan clsx dan tailwind-merge.",
+    learningOutcomes: [
+      "Memahami filosofi Utility-First CSS dan padanan aturan CSS biasa ke class Tailwind.",
+      "Menguasai sistem jarak proporsional Tailwind (skala x 4px: p-1, p-2, p-4, p-6).",
+      "Menguasai responsive breakpoint mobile-first: sm:, md:, lg:, xl:.",
+      "Mampu membuat interaksi hover:, focus:, active:, dan transisi animasi.",
+      "Menguasai helper cn() dan Class Variance Authority (CVA) untuk membuat UI Kit profesional."
+    ],
+    topics: [
+      {
+        id: "tailwind-filosofi-kamus",
+        title: "4.1 Filosofi Utility-First & Kamus Padanan CSS ke Tailwind",
+        badge: "Pondasi Tailwind",
+        summary: "Mengapa tidak perlu lagi memikirkan nama class aneh, dan tabel terjemahan CSS murni ke Tailwind.",
+        content: `Di Tailwind, alih-alih membuat file CSS baru dan pusing memberi nama class (seperti \`.card-wrapper-item-inner\`), kita merakit tampilan langsung di file HTML/JSX menggunakan class utilitas kecil.
+
+| CSS Murni | Class Tailwind | Penjelasan |
+| :--- | :--- | :--- |
+| \`display: flex; justify-content: center; align-items: center;\` | \`flex justify-center items-center\` | Posisi tengah flexbox |
+| \`display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;\` | \`grid grid-cols-3 gap-4\` | Grid 3 kolom berjarak |
+| \`padding: 16px;\` | \`p-4\` | Jarak dalam (skala 4 x 4px = 16px) |
+| \`padding-left: 24px; padding-right: 24px;\` | \`px-6\` | Jarak horizontal 24px |
+| \`margin: 0 auto;\` | \`mx-auto\` | Tengah horizontal |
+| \`font-size: 24px; font-weight: bold;\` | \`text-2xl font-bold\` | Ukuran dan ketebalan teks |
+| \`border-radius: 12px;\` | \`rounded-xl\` | Sudut membulat |
+| \`box-shadow: 0 4px 6px ...;\` | \`shadow-md\` | Bayangan kartu |`,
+        tips: [
+          "Rumus angka jarak di Tailwind: Angka selalu dikali 4px! (p-1 = 4px, p-2 = 8px, p-4 = 16px, p-6 = 24px, p-8 = 32px)."
+        ]
+      },
+      {
+        id: "tailwind-responsive-states",
+        title: "4.2 Responsive Breakpoints & Efek State (Hover, Focus, Dark)",
+        badge: "Interaktivitas",
+        summary: "Mobile-first breakpoints sm:, md:, lg:, dan efek interaktif hover:, focus:, active:.",
+        content: `**1. Breakpoints Responsif (Mobile-First):**
+- Default (tanpa awalan) = Layar Smartphone (Mobile).
+- \`sm:\` = Layar >= 640px.
+- \`md:\` = Layar Tablet >= 768px.
+- \`lg:\` = Layar Komputer / Laptop >= 1024px.
+- \`xl:\` = Layar Monitor Lebar >= 1280px.
+
+Contoh: \`w-full md:w-1/2 lg:w-1/3\` &rarr; Lebar penuh di HP, setengah layar di Tablet, sepertiga layar di Laptop!
+
+**2. Efek State & Pseudo-Classes:**
+- \`hover:bg-blue-700\`: Berubah warna saat mouse melintas.
+- \`focus:ring-2 focus:ring-blue-500\`: Garis cincin saat input sedang diketik.
+- \`active:scale-95\`: Efek tombol sedikit mengecil saat ditekan klik.
+- \`transition duration-200\`: Memastikan semua perubahan warna/skala berjalan mulus.`,
+        codeSnippet: {
+          language: "html",
+          filename: "responsive-card.html",
+          code: `<!-- Kartu Responsif + Hover Animation -->
+<div class="w-full md:w-80 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+  <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-700">Materi Baru</span>
+  <h3 class="text-lg font-bold text-slate-900 mt-3">Tailwind CSS Responsif</h3>
+  <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+    Desain antarmuka web modern langsung di class tanpa menulis ratusan baris CSS manual.
+  </p>
+  <button class="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl transition">
+    Pelajari Lebih Lanjut &rarr;
+  </button>
+</div>`
+        }
+      },
+      {
+        id: "tailwind-cva-cn",
+        title: "4.3 Komponen Reusable Bebas Bentrok: Helper cn() & CVA (Pola shadcn/ui)",
+        badge: "Standar Industri",
+        summary: "Kombinasi clsx dan tailwind-merge untuk membuat komponen yang class-nya bisa ditimpa dari luar.",
+        content: `Di React, saat kita membuat komponen tombol yang memiliki class default \`p-4\`, lalu dari luar kita memberi prop \`className="p-8"\`, class mana yang menang?
+Di CSS biasa sering terjadi konflik.
+
+Solusinya adalah fungsi **\`cn()\`** (menggunakan library \`clsx\` + \`tailwind-merge\`):
+Fungsi ini cerdas mengetahui bahwa \`p-8\` menimpa \`p-4\`, sehingga \`p-4\` otomatis dihapus dari string akhir!`,
         codeSnippet: {
           language: "tsx",
           filename: "lib/utils.ts",
           code: `import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-// Fungsi utilitas terpenting di era web modern:
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// CONTOH PEMAKAIAN PADA KOMPONEN:
 /*
-CONTOH KEAJAIBAN twMerge:
-cn("p-4 bg-red-500", "p-8") 
-HASIL: "bg-red-500 p-8" (p-4 otomatis dibuang, anti-konflik!)
-*/`
-        }
-      },
-      {
-        id: "reusable-button-cva",
-        title: "3.3 Pembuatan Komponen Button Reusable dengan CVA",
-        badge: "Kode Produksi",
-        summary: "Membangun komponen Button dengan sistem type-safe yang elegan.",
-        content: `Berikut adalah implementasi nyata bagaimana sebuah komponen Button dibuat di perusahaan teknologi modern menggunakan CVA:`,
-        codeSnippet: {
-          language: "tsx",
-          filename: "components/ui/Button.tsx",
-          code: `import React from "react";
-import { cn } from "@/lib/utils";
-
-// Definisi varian tombol secara deklaratif
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "destructive" | "ghost";
-  size?: "sm" | "md" | "lg";
-};
-
-export default function Button({
-  className,
-  variant = "primary",
-  size = "md",
-  ...props
-}: ButtonProps) {
-  const baseStyles = "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
-
-  const variantStyles = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/20",
-    secondary: "bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-200",
-    destructive: "bg-rose-600 text-white hover:bg-rose-700 shadow-sm shadow-rose-500/20",
-    ghost: "hover:bg-slate-100 text-slate-700"
-  };
-
-  const sizeStyles = {
-    sm: "text-xs px-3 py-1.5 gap-1.5",
-    md: "text-sm px-4 py-2.5 gap-2",
-    lg: "text-base px-6 py-3.5 gap-2.5"
-  };
-
+function Button({ className, children }) {
   return (
-    <button
-      className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
-      {...props}
-    />
+    <button className={cn("px-4 py-2 bg-blue-600 text-white rounded-lg", className)}>
+      {children}
+    </button>
   );
-}`
-        }
-      },
-      {
-        id: "advanced-tailwind-variants",
-        title: "3.4 Selektor Kompleks: Arbitrary Variants & Nested Groups",
-        badge: "Fitur Sakti",
-        summary: "Mengendalikan tampilan anak, saudara, dan parent state tanpa menulis file CSS baru.",
-        content: `Tailwind menyediakan selektor tingkat tinggi:
-- **Child Selector (\`[&>p]\`):** Mengatur styling seluruh tag \`<p>\` yang merupakan anak langsung dari div.
-- **Nested Groups (\`group/card\`, \`group/sidebar\`):** Ketika kamu punya kartu di dalam sidebar, dan hover pada kartu tidak boleh mengganggu hover sidebar.
-- **Peer States (\`peer-checked:\`):** Mengubah tampilan elemen tetangga saat input checkbox/radio aktif (sangat berguna untuk custom toggle switch tanpa JavaScript!).`,
-        codeSnippet: {
-          language: "html",
-          filename: "custom-toggle.html",
-          code: `<!-- Custom Toggle Switch 100% Tailwind tanpa JavaScript -->
-<label class="relative inline-flex items-center cursor-pointer">
-  <input type="checkbox" class="sr-only peer" />
-  <!-- Track Switch -->
-  <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-  <span class="ml-3 text-sm font-medium text-slate-700">Aktifkan Fitur</span>
-</label>`
-        }
-      }
-    ],
-    finalProject: {
-      title: "Proyek Modul 3: Membangun Mini Design System Component Library (UI Kit)",
-      description: "Membuat mini library komponen UI mandiri menggunakan Tailwind CSS yang terdiri dari: Button (4 varian), Badge (4 varian warna), Input Text dengan validasi error state, dan Modal Dialog yang ter-isolasi dengan animasi halus.",
-      requirements: [
-        "Wajib menggunakan helper cn() (clsx + tailwind-merge) untuk meresolusi bentrok class",
-        "Mendukung Dark Mode menggunakan CSS variables",
-        "Komponen Button memiliki status loading (spinner) dan disabled state yang tepat",
-        "Didesain dengan transisi halus (transition-all, active:scale-95)"
-      ],
-      submissionTip: "Pastikan komponen Button bisa ditimpa ukurannya lewat prop className tanpa merusak style dasarnya."
-    }
-  },
-  {
-    id: "modul-4",
-    slug: "react-engine-and-advanced-patterns",
-    level: 4,
-    title: "Modul 4: React Engine (Fiber, Reconciliation, Hooks Deep Dive)",
-    tagline: "Bedah siklus render React, Virtual DOM vs Real DOM, useReducer state machine, useCallback/useMemo referential equality, dan Custom Hooks.",
-    estimatedTime: "2-3 Minggu",
-    color: "blue",
-    iconName: "Atom",
-    description: "Di modul ini siswa tidak hanya belajar cara memanggil hooks, melainkan memahami BAGAIMANA React bekerja: arsitektur React Fiber, algoritma rekonsiliasi berbasis Diffing, mengapa re-render terjadi, bahaya memory leak pada useEffect, dan cara memisahkan Business Logic dari antarmuka menggunakan Custom Hooks.",
-    learningOutcomes: [
-      "Memahami algoritma React Reconciliation (Fiber Tree, Diffing Rules, dan peran krusial properti key).",
-      "Memahami aturan re-render dan automatic batching pembaruan state di React 18/19.",
-      "Menguasai useReducer untuk mengelola state kompleks dengan pola Redux-like State Machine.",
-      "Menguasai useRef untuk memegang nilai persisten tanpa memicu re-render dan manipulasi DOM imperatif.",
-      "Memahami kapan useMemo & useCallback benar-benar dibutuhkan (Referential Equality) vs kapan menjadi premature optimization.",
-      "Merancang Custom Hooks modular (contoh: useDebounce, useLocalStorage, useFetchWithAbort)."
-    ],
-    topics: [
-      {
-        id: "react-fiber-reconciliation",
-        title: "4.1 React Fiber, Virtual DOM, & Algoritma Diffing",
-        badge: "Mesin React",
-        summary: "Bagaimana React membandingkan 2 pohon elemen dan menentukan perubahan minimal ke Real DOM.",
-        content: `**Virtual DOM (VDOM)** adalah representasi objek JavaScript ringan dari Real DOM.
-Ketika state berubah, React melakukan proses **Reconciliation**:
-1. React membuat pohon Virtual DOM baru hasil render fungsi komponen.
-2. Algoritma **Diffing (O(n))** membandingkan pohon lama dengan pohon baru.
-3. React menghitung perubahan terkecil (*patch*) lalu menerapkannya sekaligus ke Real DOM di browser (**Commit Phase**).
-
-**Aturan Emas Properti \`key\` pada List:**
-- Jangan pernah memakai \`key={index}\` pada data yang bisa ditambah, dihapus, atau diurutkan!
-- Jika urutan array berubah, index akan bergeser sehingga React salah mencocokkan state komponen anak dengan item data yang keliru. Selalu gunakan ID unik yang permanen (misal: \`item.id\`).`,
-        codeSnippet: {
-          language: "jsx",
-          filename: "diffingRules.jsx",
-          code: `// BAHAYA: Menggunakan index sebagai key pada daftar yang dinamis
-{items.map((item, index) => (
-  // Jika item pertama dihapus, item kedua akan mewarisi index 0 beserta input statenya yang lama!
-  <TodoItem key={index} data={item} />
-))}
-
-// BENAR: Menggunakan ID unik yang stabil
-{items.map((item) => (
-  <TodoItem key={item.id} data={item} />
-))}`
-        }
-      },
-      {
-        id: "usereducer-state-machine",
-        title: "4.2 useReducer: Mengelola State Kompleks dengan State Machine",
-        badge: "Pola Skalabel",
-        summary: "Alternatif terstruktur untuk useState saat sebuah perubahan state memicu banyak variabel sekaligus.",
-        content: `Ketika state komponen memiliki relasi erat (misal: \`isLoading\`, \`error\`, \`data\`, \`isSuccess\`), mengelolanya dengan 4 \`useState\` terpisah sering kali memicu kondisi inkonsisten (*impossible states*—misal data sudah ada tapi isLoading masih true).
-
-**Gunakan \`useReducer\`:**
-Pola yang memisahkan **'Apa yang terjadi' (Dispatch Action)** dari **'Bagaimana state diperbarui' (Reducer Function)**. Pola ini murni, mudah di-unit test, dan anti-bug.`,
-        codeSnippet: {
-          language: "jsx",
-          filename: "useReducerCart.jsx",
-          code: `import { useReducer } from "react";
-
-// 1. Initial State
-const initialState = {
-  items: [],
-  totalPrice: 0,
-};
-
-// 2. Pure Reducer Function
-function cartReducer(state, action) {
-  switch (action.type) {
-    case "ADD_ITEM": {
-      const updatedItems = [...state.items, action.payload];
-      const newTotal = updatedItems.reduce((acc, item) => acc + item.price, 0);
-      return { ...state, items: updatedItems, totalPrice: newTotal };
-    }
-    case "REMOVE_ITEM": {
-      const filtered = state.items.filter((item) => item.id !== action.payload.id);
-      const newTotal = filtered.reduce((acc, item) => acc + item.price, 0);
-      return { ...state, items: filtered, totalPrice: newTotal };
-    }
-    case "CLEAR_CART":
-      return initialState;
-    default:
-      throw new Error(\`Action type \${action.type} tidak dikenali.\`);
-  }
 }
-
-// 3. Komponen Pengguna
-export default function ShoppingCart() {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
-
-  return (
-    <div>
-      <h2>Total Belanja: Rp {state.totalPrice.toLocaleString()}</h2>
-      <button onClick={() => dispatch({ type: "ADD_ITEM", payload: { id: Date.now(), name: "Sepatu", price: 200000 } })}>
-        + Tambah Sepatu
-      </button>
-      <button onClick={() => dispatch({ type: "CLEAR_CART" })}>
-        Kosongkan
-      </button>
-    </div>
-  );
-}`
-        }
-      },
-      {
-        id: "usecallback-usememo-deep",
-        title: "4.3 Optimasi Performa: Kapan Wajib useMemo & useCallback?",
-        badge: "Kinerja Tinggi",
-        summary: "Mencegah re-render yang tidak perlu berdasarkan Referential Equality.",
-        content: `Setiap kali komponen React me-render ulang:
-- Semua fungsi di dalamnya **dibuat ulang dengan alamat memori baru** (\`() => {}\` != \`() => {}\`).
-- Semua kalkulasi di dalamnya dihitung ulang dari awal.
-
-**Kapan Wajib Pakai:**
-1. **\`useCallback\`**: Hanya berguna jika fungsi tersebut dikirim sebagai prop ke komponen anak yang sudah dibungkus dengan \`React.memo()\`. Jika anak tidak di-memoize, pembungkusan useCallback sia-sia.
-2. **\`useMemo\`**: Hanya berguna untuk operasi komputasi array besar (ribuan item) atau objek referensi yang dimasukkan ke dalam dependency array \`useEffect\` lain.
-
-> ⚠️ **Peringatan:** Menyelimuti semua kode dengan useMemo/useCallback tanpa alasan justru memperlambat aplikasi karena React harus mengalokasikan memori ekstra untuk melacak dependency array!`,
-        codeSnippet: {
-          language: "jsx",
-          filename: "memoExample.jsx",
-          code: `import { useState, useMemo, useCallback, memo } from "react";
-
-// Komponen Anak yang diproteksi dengan React.memo
-const TombolAksi = memo(function TombolAksi({ onKlik, label }) {
-  console.log("Komponen Tombol di-render ulang!");
-  return <button onClick={onKlik}>{label}</button>;
-});
-
-export default function ParentApp() {
-  const [count, setCount] = useState(0);
-  const [angkaLain, setAngkaLain] = useState(10);
-
-  // useCallback mengunci alamat memori fungsi agar TombolAksi TIDAK ikut re-render
-  // saat state 'angkaLain' berubah!
-  const handleKlikStabil = useCallback(() => {
-    setCount((prev) => prev + 1);
-  }, []);
-
-  return (
-    <div>
-      <TombolAksi onKlik={handleKlikStabil} label="Klik Saya" />
-      <button onClick={() => setAngkaLain(angkaLain + 1)}>Ubah Angka Lain: {angkaLain}</button>
-    </div>
-  );
-}`
-        }
-      },
-      {
-        id: "custom-hooks-architecture",
-        title: "4.4 Merancang Custom Hook Standar Industri: useDebounce",
-        badge: "Pemisahan Logika",
-        summary: "Mengekstrak business logic murni agar bisa dipakai ulang di puluhan komponen berbeda.",
-        content: `Custom Hook adalah fungsi JavaScript biasa yang namanya diawali dengan kata \`use\` dan di dalamnya memanggil hooks resmi React (\`useState\`, \`useEffect\`, dll).
-
-Contoh klasik: **\`useDebounce\`**. Hook ini menunda pembaruan nilai input hingga pengguna berhenti mengetik selama durasi tertentu (misal 500ms) untuk menghemat ribuan panggilan API yang tidak perlu.`,
-        codeSnippet: {
-          language: "tsx",
-          filename: "hooks/useDebounce.ts",
-          code: `import { useState, useEffect } from "react";
-
-export function useDebounce<T>(value: T, delay: number = 500): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    // Buat timer untuk mengupdate debouncedValue setelah durasi delay
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    // CLEANUP FUNCTION: Batalkan timer lama jika value berubah sebelum delay habis!
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
-// CARA PAKAI DI KOMPONEN SEARCH:
-/*
-const [search, setSearch] = useState("");
-const debouncedSearch = useDebounce(search, 400);
-
-useEffect(() => {
-  // Hanya menembak API saat user SELESAI mengetik selama 400ms!
-  if (debouncedSearch) fetchSearchAPI(debouncedSearch);
-}, [debouncedSearch]);
 */`
         }
       }
     ],
     finalProject: {
-      title: "Proyek Modul 4: Mini E-Commerce Engine dengan useReducer & Custom useDebounce",
-      description: "Membangun aplikasi katalog dan keranjang belanja lengkap: pencarian produk otomatis dengan debounce, manajemen mutasi keranjang belanja menggunakan useReducer (ADD, REMOVE, UPDATE_QTY, APPLY_DISCOUNT), dan optimasi rendering dengan React.memo.",
+      title: "Proyek Modul 4: Landing Page Produk Modern 100% Tailwind CSS",
+      description: "Membangun 1 halaman landing page lengkap menggunakan Tailwind CSS: Navbar responsif dengan menu mobile, Hero Section dengan tombol Call to Action, Grid Fitur 3 kolom di desktop, dan Footer.",
       requirements: [
-        "Seluruh state transaksi cart dikelola secara eksklusif menggunakan useReducer",
-        "Pencarian produk wajib menggunakan custom hook useDebounce",
-        "Daftar item menggunakan key unik (bukan index array)",
-        "Fungsi kalkulasi diskon dioptimalkan dengan useMemo"
+        "100% styling menggunakan class Tailwind CSS",
+        "Layout responsif (tampil rapi di layar 360px sampai 1440px)",
+        "Memiliki efek transisi dan hover di semua tombol dan link",
+        "Memiliki kombinasi kontras warna teks dan latar yang nyaman dibaca"
       ],
-      submissionTip: "Buka React Profiler di browser untuk membuktikan bahwa mengetik di input search tidak memicu re-render pada komponen list cart yang sedang diam."
+      submissionTip: "Pastikan kontainer utama dibungkus dengan max-w-6xl mx-auto px-4 agar konten tidak melebar tanpa batas di monitor ultra-wide."
     }
   },
   {
     id: "modul-5",
-    slug: "nextjs-app-router-produksi",
+    slug: "react-js-fondasi-komponen",
     level: 5,
-    title: "Modul 5: Next.js App Router Arsitektur Produksi & Fullstack Frontend",
-    tagline: "Server Components vs Client Components, Data Fetching & Caching Deep Dive, Server Actions, Dynamic Routing, dan Deployment.",
-    estimatedTime: "3-4 Minggu",
+    title: "Modul 5: React.js (Fondasi Komponen, Props, & State)",
+    tagline: "Mental model puzzle komponen, JSX, Props, useState, useEffect, useReducer, dan Custom Hooks.",
+    estimatedTime: "2 Minggu",
     color: "violet",
-    iconName: "Rocket",
-    description: "Puncak keahlian frontend modern! Membedah cara kerja internal Next.js App Router: arsitektur React Server Components (RSC), aturan serialisasi perbatasan Server-Client, mekanisme 4 lapisan Caching Next.js (Request Memoization, Data Cache, Full Route Cache, Router Cache), Server Actions untuk mutasi database tanpa API routes terpisah, hingga deployment siap produksi di Vercel.",
+    iconName: "Atom",
+    description: "Next.js adalah framework di atas React. Siswa belajar cara berpikir deklaratif: memecah UI menjadi komponen mandiri, mengirim data via Props, mengelola interaktivitas dengan useState, mengambil data via useEffect, dan mengelola state kompleks dengan useReducer.",
     learningOutcomes: [
-      "Menguasai mental model React Server Components (RSC) vs Client Components dan Serialization Boundary.",
-      "Memahami pola komposisi 'Passing Server Components as Children' untuk meminimalisir ukuran bundle JS browser.",
-      "Menguasai 4 lapisan Caching Next.js serta mekanisme revalidasi: Time-based (revalidate) dan On-demand (revalidateTag / revalidatePath).",
-      "Mengimplementasikan Server Actions untuk mutasi data form yang aman dan type-safe.",
-      "Menguasai Dynamic Routing, Catch-all Routes ([...slug]), Intercepting Routes, dan Parallel Routes.",
-      "Menerapkan Streaming UI dengan React Suspense dan file loading.tsx untuk skor Core Web Vitals optimal."
+      "Memahami konsep UI = f(State) dan sintaks JSX.",
+      "Mampu membuat komponen modular dan mengirim data via Props.",
+      "Menguasai pengelolaan status dinamis dengan hook useState.",
+      "Mengambil data API saat komponen dimuat menggunakan hook useEffect.",
+      "Menguasai useReducer untuk transaksi data kompleks (keranjang belanja)."
     ],
     topics: [
       {
-        id: "rsc-architecture-serialization",
-        title: "5.1 Arsitektur React Server Components (RSC) & Serialization Boundary",
-        badge: "Pondasi Next.js",
-        summary: "Mengapa Server Components adalah lompatan terbesar dalam sejarah web modern.",
-        content: `Di Next.js App Router, **seluruh komponen secara default adalah Server Component**.
-Server Component dieksekusi di Node.js server, diubah menjadi format biner virtual (*RSC Payload*), lalu dikirim ke browser bersama HTML statis.
-
-**Keuntungan Kritis Server Component:**
-1. **0 KB Ukuran JavaScript di Browser:** Dependensi berat (misal: library Markdown parser 200KB atau library manipulasi tanggal) diproses di server dan TIDAK PERNAH dikirim ke browser pengguna!
-2. **Akses Langsung ke Database & Backend:** Bisa langsung melakukan koneksi SQL/Prisma atau memanggil API tanpa perlu membuat endpoint API publik perantara.
-
-**Aturan Keras Serialization Boundary:**
-Saat Server Component mengirim data ke Client Component (komponen ber-\`'use client'\`), data tersebut harus **Serializable** (bisa diubah menjadi format JSON/teks).
-> ❌ DILARANG mengirim: Fungsi, instance Class (seperti Date objek mentah atau Database Connection pool).
-> ✅ HANYA BOLEH: String, Number, Boolean, Array, dan Plain Object.`,
+        id: "react-komponen-props",
+        title: "5.1 Mental Model Komponen, JSX, & Props Reusable",
+        badge: "Pondasi React",
+        summary: "Memecah halaman jadi kepingan puzzle lego dan mengirim parameter props.",
+        content: `Di React:
+1. **Komponen:** Fungsi JavaScript yang mengembalikan kode tampilan (JSX). Nama fungsi WAJIB huruf kapital (contoh: \`Navbar\`, bukan \`navbar\`).
+2. **JSX:** Menulis struktur HTML langsung di dalam JavaScript. Atribut class diganti menjadi \`className\`.
+3. **Props:** Parameter yang dikirim dari komponen induk (Parent) ke komponen anak (Child) agar komponen bisa dipakai berulang kali dengan isi berbeda.`,
         codeSnippet: {
-          language: "tsx",
-          filename: "app/dashboard/page.tsx",
-          code: `// SERVER COMPONENT (Default - Berjalan di Server)
-import ClientSearchBar from "./ClientSearchBar";
-
-// Bisa langsung async/await untuk mengambil data dari server secara instan!
-export default async function DashboardPage() {
-  const res = await fetch("https://dummyjson.com/products?limit=5", {
-    // Next.js Data Cache: Simpan cache selama 60 detik (ISR)
-    next: { revalidate: 60 }
-  });
-  const data = await res.json();
-
+          language: "jsx",
+          filename: "KartuProfil.jsx",
+          code: `// Komponen Anak: Menerima props
+function KartuSiswa({ nama, jurusan, nilai }) {
   return (
-    <main className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-extrabold mb-6">Dashboard Produk</h1>
-      
-      {/* Mengirim data serializable (string/array) ke Client Component */}
-      <ClientSearchBar initialCount={data.products.length} />
-
-      <div className="grid gap-4 mt-6">
-        {data.products.map((item: any) => (
-          <div key={item.id} className="p-4 bg-white border rounded-xl shadow-xs">
-            <h2 className="font-bold text-slate-800">{item.title}</h2>
-            <p className="text-sm text-slate-500">Rp {item.price * 15000}</p>
-          </div>
-        ))}
-      </div>
-    </main>
-  );
-}`
-        }
-      },
-      {
-        id: "server-client-composition-pattern",
-        title: "5.2 Pola Komposisi: Memasukkan Server Component ke Dalam Client Component",
-        badge: "Trik Arsitektur",
-        summary: "Bagaimana cara membungkus Server Component di dalam Client Component tanpa merusak status Server-nya?",
-        content: `Banyak developer pemula mengira: jika sebuah komponen diberi tag \`'use client'\`, maka seluruh komponen yang diimpor di dalamnya akan otomatis berubah menjadi Client Component. **Ini benar jika diimpor langsung!**
-
-**Solusi Pola Desain (Passing as Children):**
-Jangan impor Server Component di dalam Client Component. Melainkan, buat Client Component sebagai **Container Pembungkus** yang menerima \`children: React.ReactNode\`. 
-Dengan begitu, komponen anak tetap berstatus Server Component dan tidak menambah beban bundle JavaScript browser!`,
-        codeSnippet: {
-          language: "tsx",
-          filename: "components/ClientModalWrapper.tsx",
-          code: `"use client";
-import { useState } from "react";
-
-// Client Component hanya mengurus logika buka/tutup modal
-export default function ClientModalWrapper({ children }: { children: React.ReactNode }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div>
-      <button onClick={() => setIsOpen(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
-        Buka Modal
-      </button>
-
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white p-6 rounded-2xl max-w-lg w-full">
-            {/* 'children' di sini TETAP DIRENDER DI SERVER! Ukuran JS 0 KB ke browser! */}
-            {children}
-            <button onClick={() => setIsOpen(false)} className="mt-4 text-xs font-bold text-slate-500">
-              Tutup
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="p-4 bg-white border rounded-xl shadow-xs">
+      <h3 className="font-bold text-slate-800">{nama}</h3>
+      <p className="text-sm text-slate-500">{jurusan}</p>
+      <span className="inline-block mt-2 px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">
+        Nilai: {nilai}
+      </span>
     </div>
   );
-}`
-        }
-      },
-      {
-        id: "caching-and-revalidation",
-        title: "5.3 Deep Dive 4 Lapisan Caching Next.js & Revalidation",
-        badge: "Kinerja Ekstrem",
-        summary: "Memahami Request Memoization, Data Cache, Full Route Cache, dan On-Demand Revalidation.",
-        content: `Next.js memiliki sistem caching terkuat di dunia web, terbagi dalam 4 lapisan:
-
-1. **Request Memoization:** Jika fungsi \`fetch('url-sama')\` dipanggil di 3 komponen berbeda dalam 1 kali render halaman, Next.js otomatis hanya menembak 1 kali HTTP request ke server.
-2. **Data Cache (Persistent):** Menyimpan response data antar permintaan user yang berbeda di server.
-   - \`fetch(url, { cache: 'force-cache' })\`: Cache selamanya (Statis).
-   - \`fetch(url, { next: { revalidate: 3600 } })\`: Cache 1 jam, lalu update di background (ISR - Incremental Static Regeneration).
-   - \`fetch(url, { cache: 'no-store' })\`: Selalu fetch baru setiap kali dibuka (Dinamis).
-3. **On-Demand Revalidation:**
-   Menghapus cache seketika saat ada admin yang mempublikasikan artikel baru:
-   - \`revalidatePath('/artikel')\`
-   - \`revalidateTag('daftar-produk')\``,
-        codeSnippet: {
-          language: "typescript",
-          filename: "app/actions/productActions.ts",
-          code: `"use server";
-import { revalidatePath, revalidateTag } from "next/cache";
-
-// Server Action: Mutasi data yang berjalan murni di server
-export async function tambahProdukBaru(formData: FormData) {
-  const nama = formData.get("namaProduk") as string;
-  const harga = formData.get("harga") as string;
-
-  // 1. Simpan ke Database
-  console.log("Menyimpan ke DB di server:", { nama, harga });
-
-  // 2. Beri tahu Next.js untuk membuang cache lama dan membangun halaman baru secara instan!
-  revalidatePath("/produk");
-  
-  return { success: true };
-}`
-        }
-      },
-      {
-        id: "streaming-suspense-loading",
-        title: "5.4 Streaming UI dengan React Suspense & loading.tsx",
-        badge: "User Experience",
-        summary: "Menghilangkan layar putih; tampilkan layout seketika sementara data berat di-stream menyusul.",
-        content: `Di web konvensional, jika ada satu komponen lambat (misal mengambil data analitik butuh 3 detik), seluruh halaman akan macet menunggu 3 detik sebelum browser bisa menampilkan apa pun (*TTFB lambat*).
-
-Di Next.js App Router:
-1. Buat file \`loading.tsx\` untuk skeleton loading instan.
-2. Bungkus komponen lambat dengan **\`<Suspense fallback={<Skeleton />}>\`**.
-3. Browser akan menerima Header dan Navbar dalam **0.1 detik**, lalu bagian data analitik akan di-*streaming* melalui koneksi HTTP yang sama begitu datanya siap!`,
-        codeSnippet: {
-          language: "tsx",
-          filename: "app/analytics/page.tsx",
-          code: `import { Suspense } from "react";
-
-// Komponen lambat (simulasi 3 detik)
-async function SlowAnalyticsWidget() {
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-  return <div className="p-4 bg-emerald-50 text-emerald-800 rounded-xl">Analitik Penjualan: Rp 45.000.000</div>;
 }
 
-export default function AnalyticsPage() {
+// Komponen Induk: Memanggil komponen berkali-kali
+export default function DaftarKelas() {
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Laporan Bisnis</h1>
-      
-      {/* Bagian ini tidak menahan render halaman utama! */}
-      <Suspense fallback={<div className="p-4 bg-slate-100 animate-pulse rounded-xl">Memuat data analitik...</div>}>
-        <SlowAnalyticsWidget />
-      </Suspense>
+    <div className="grid grid-cols-2 gap-4">
+      <KartuSiswa nama="Budi" jurusan="Frontend" nilai={90} />
+      <KartuSiswa nama="Siti" jurusan="Fullstack" nilai={95} />
     </div>
+  );
+}`
+        }
+      },
+      {
+        id: "react-usestate-interaktif",
+        title: "5.2 useState: Mengelola Status Dinamis & Interaksi Pengguna",
+        badge: "Wajib Kuasai",
+        summary: "Bagaimana mengubah tampilan layar otomatis saat data berubah tanpa utak-atik DOM manual.",
+        content: `Ketika variabel biasa berubah, React tidak tahu bahwa layar harus diperbarui.
+Dengan \`useState\`, begitu kita memanggil fungsi setter-nya (misal: \`setCount(count + 1)\`), React **otomatis me-render ulang tampilan** dengan data baru!`,
+        codeSnippet: {
+          language: "jsx",
+          filename: "Counter.jsx",
+          code: `import { useState } from "react";
+
+export default function Counter() {
+  const [jumlah, setJumlah] = useState(0);
+
+  return (
+    <div className="p-6 bg-slate-50 rounded-xl text-center">
+      <p className="text-sm text-slate-500">Jumlah Klik:</p>
+      <h2 className="text-4xl font-extrabold my-2">{jumlah}</h2>
+      
+      <div className="flex justify-center gap-2">
+        <button 
+          onClick={() => setJumlah(jumlah - 1)}
+          className="px-4 py-2 bg-slate-200 hover:bg-slate-300 font-bold rounded-lg"
+        >
+          - Kurang
+        </button>
+        <button 
+          onClick={() => setJumlah(jumlah + 1)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg"
+        >
+          + Tambah
+        </button>
+      </div>
+    </div>
+  );
+}`
+        },
+        pitfalls: [
+          "DILARANG mengubah state langsung: 'jumlah = jumlah + 1'. Selalu gunakan setter 'setJumlah(jumlah + 1)'."
+        ]
+      },
+      {
+        id: "react-useeffect-fetch",
+        title: "5.3 useEffect: Menghubungkan Komponen ke Dunia Luar (Fetch API)",
+        badge: "Efek Samping",
+        summary: "Mengambil data saat halaman dibuka dan memahami array dependensi [].",
+        content: `Kapan kita butuh \`useEffect\`? Saat ingin menjalankan kode otomatis di luar alur render React, seperti:
+- Mengambil data dari server API saat halaman pertama kali muncul.
+- Memasang timer / interval.
+- Mengubah judul tab browser (\`document.title\`).
+
+**Aturan Dependency Array:**
+- \`[]\` (kosong): Efek hanya berjalan **SATU KALI** saat komponen pertama kali lahir (*mount*).
+- \`[id]\`: Efek berjalan ulang setiap kali nilai variabel \`id\` berubah.`,
+        codeSnippet: {
+          language: "jsx",
+          filename: "DaftarUser.jsx",
+          code: `import { useState, useEffect } from "react";
+
+export default function DaftarUser() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("https://dummyjson.com/users?limit=3")
+      .then((res) => res.json())
+      .then((data) => {
+        setUsers(data.users);
+        setLoading(false);
+      });
+  }, []); // Array kosong = hanya jalankan 1x saat buka halaman
+
+  if (loading) return <p className="text-slate-500">Sedang memuat data...</p>;
+
+  return (
+    <ul className="space-y-2">
+      {users.map((u) => (
+        <li key={u.id} className="p-3 bg-white border rounded-lg">
+          <p className="font-bold">{u.firstName} {u.lastName}</p>
+          <p className="text-xs text-slate-500">{u.email}</p>
+        </li>
+      ))}
+    </ul>
   );
 }`
         }
       }
     ],
     finalProject: {
-      title: "Final Capstone Project: Fullstack Platform Web Blog & Katalog Modern (Next.js App Router)",
-      description: "Membangun aplikasi web fullstack tingkat produksi menggunakan Next.js App Router dan Tailwind CSS: Dynamic Routes (/blog/[slug]), Server Component untuk SEO & Data Fetching cepat, Client Component dengan useOptimistic/useState untuk interaksi real-time, Server Actions untuk submit data form, serta streaming dengan Suspense.",
+      title: "Proyek Modul 5: Mini E-Commerce Shopping Cart dengan React & Tailwind",
+      description: "Membangun aplikasi katalog barang: Menampilkan data produk dari API, tombol 'Tambah ke Keranjang', dan panel ringkasan belanja yang menghitung total item dan total harga belanjaan secara otomatis.",
       requirements: [
-        "Menerapkan struktur folder App Router dengan layout bersama, loading.tsx, dan not-found.tsx",
-        "Menerapkan komposisi Server Component dan Client Component yang hemat bundle size",
-        "Menggunakan Server Actions untuk submit komentar atau artikel baru dengan revalidatePath",
-        "Menyediakan dynamic route dinamis /artikel/[slug] dengan meta data dinamis (generateMetadata) untuk SEO",
-        "Berhasil di-deploy online ke Vercel dengan skor Lighthouse performa di atas 90"
+        "Memisahkan UI menjadi minimal 3 komponen terpisah",
+        "Menggunakan useState untuk menyimpan barang di keranjang",
+        "Menggunakan useEffect untuk mengambil data produk di awal",
+        "Styling rapi menggunakan Tailwind CSS"
       ],
-      submissionTip: "Periksa tab Network di browser pada hasil build produksi untuk membuktikan bahwa tidak ada dependensi server yang bocor ke bundle client."
+      submissionTip: "Pastikan list barang dirender dengan key={item.id} yang stabil (bukan index array)."
+    }
+  },
+  {
+    id: "modul-6",
+    slug: "nextjs-app-router-mastery",
+    level: 6,
+    title: "Modul 6: Next.js App Router (Tujuan Akhir & Fullstack Frontend)",
+    tagline: "File-system routing, Server Components vs Client Components, Dynamic Routes, Caching, Server Actions, dan Deploy ke Vercel.",
+    estimatedTime: "2-3 Minggu",
+    color: "indigo",
+    iconName: "Rocket",
+    description: "Puncak dari roadmap belajar! Siswa menggabungkan seluruh keahlian HTML, CSS, JavaScript, Tailwind, dan React ke dalam Next.js App Router: arsitektur Server Component (0 KB JS ke browser), dynamic routing, data fetching langsung di komponen, hingga mendeploy web online ke Vercel.",
+    learningOutcomes: [
+      "Menguasai struktur folder App Router (layout.tsx, page.tsx, not-found.tsx, loading.tsx).",
+      "Memahami perbedaan mutlak Server Components (default) vs Client Components ('use client').",
+      "Mampu membuat Dynamic Routing (contoh: halaman detail artikel /artikel/[id]).",
+      "Memahami strategi Caching dan Revalidation data di Next.js.",
+      "Menguasai deployment gratis ke platform Vercel dari repository GitHub."
+    ],
+    topics: [
+      {
+        id: "nextjs-arsitektur-app-router",
+        title: "6.1 Arsitektur Folder App Router & Navigasi Cepat",
+        badge: "Routing Otomatis",
+        summary: "Struktur folder menentukan URL web secara otomatis tanpa library tambahan.",
+        content: `Di Next.js App Router:
+- \`app/page.tsx\` &rarr; Halaman utama beranda (URL: \`/\`)
+- \`app/about/page.tsx\` &rarr; Halaman Tentang (URL: \`/about\`)
+- \`app/kontak/page.tsx\` &rarr; Halaman Kontak (URL: \`/kontak\`)
+- \`app/layout.tsx\` &rarr; Template bersama (Navbar & Footer tetap ada di semua halaman)
+
+Gunakan komponen **\`<Link href="...">\`** pengganti tag \`<a>\` agar perpindahan halaman berlangsung instan tanpa reload browser!`,
+        codeSnippet: {
+          language: "tsx",
+          filename: "app/layout.tsx",
+          code: `import Link from "next/link";
+import "./globals.css";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="id">
+      <body className="bg-slate-50 text-slate-900">
+        <nav className="p-4 bg-white border-b flex justify-between items-center max-w-5xl mx-auto">
+          <Link href="/" className="font-extrabold text-blue-600">MyWebsite</Link>
+          <div className="flex gap-4 text-sm font-medium">
+            <Link href="/" className="hover:text-blue-600">Beranda</Link>
+            <Link href="/about" className="hover:text-blue-600">Tentang</Link>
+          </div>
+        </nav>
+        
+        <main className="max-w-5xl mx-auto p-4">{children}</main>
+      </body>
+    </html>
+  );
+}`
+        }
+      },
+      {
+        id: "nextjs-server-vs-client",
+        title: "6.2 Server Components vs Client Components ('use client')",
+        badge: "Kunci Next.js",
+        summary: "Kapan kode berjalan di Server (cepat & aman), dan kapan butuh 'use client' di browser.",
+        content: `**1. Server Component (DEFAULT):**
+- Berjalan di server komputer Next.js.
+- Ukuran JavaScript yang dikirim ke browser pengguna adalah **0 KB**!
+- Bisa langsung mengambil data dengan \`async/await\` tanpa butuh \`useEffect\` atau \`useState\`.
+
+**2. Client Component (Wajib tulis 'use client' di baris paling atas):**
+- Berjalan di browser pengguna.
+- **Hanya dipakai jika butuh:**
+  - Interaksi klik: \`onClick\`, \`onSubmit\`.
+  - State React: \`useState\`, \`useReducer\`.
+  - Efek browser: \`useEffect\`, \`localStorage\`.`,
+        codeSnippet: {
+          language: "tsx",
+          filename: "app/produk/page.tsx",
+          code: `// SERVER COMPONENT: Mengambil data langsung di server!
+// Tidak perlu useState dan useEffect lagi!
+export default async function HalamanProduk() {
+  const res = await fetch("https://dummyjson.com/products?limit=3");
+  const data = await res.json();
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-4">Daftar Produk Unggulan</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {data.products.map((item: any) => (
+          <div key={item.id} className="p-4 bg-white border rounded-xl shadow-xs">
+            <h2 className="font-bold">{item.title}</h2>
+            <p className="text-sm text-slate-500 mt-1">Rp {item.price * 15000}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}`
+        }
+      },
+      {
+        id: "nextjs-dynamic-routes",
+        title: "6.3 Dynamic Routes: Halaman Detail Artikel Dinamis [id]",
+        badge: "Rute Dinamis",
+        summary: "Membuat URL dinamis seperti /blog/1, /blog/belajar-html dengan folder [slug].",
+        content: `Ketika kita memiliki ribuan artikel, kita tidak mungkin membuat ribuan folder manual.
+Solusinya: Buat nama folder dengan kurung siku: **\`app/artikel/[id]/page.tsx\`**.
+Next.js otomatis memberikan parameter URL tersebut ke dalam komponen!`,
+        codeSnippet: {
+          language: "tsx",
+          filename: "app/artikel/[id]/page.tsx",
+          code: `// Halaman ini otomatis menangani URL: /artikel/1, /artikel/100, dll.
+export default async function DetailArtikel({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
+  const res = await fetch(\`https://dummyjson.com/posts/\${id}\`);
+  const artikel = await res.json();
+
+  return (
+    <article className="max-w-2xl mx-auto py-8">
+      <span className="text-xs font-bold text-blue-600 uppercase">Artikel #{id}</span>
+      <h1 className="text-3xl font-extrabold text-slate-900 mt-2">{artikel.title}</h1>
+      <p className="mt-4 text-slate-700 leading-relaxed">{artikel.body}</p>
+    </article>
+  );
+}`
+        }
+      },
+      {
+        id: "nextjs-deploy-vercel",
+        title: "6.4 Deploy Web Gratis ke Seluruh Dunia (Vercel)",
+        badge: "Go Live!",
+        summary: "Menghubungkan repository GitHub ke Vercel agar website bisa diakses semua orang.",
+        content: `Langkah menerbitkan website ke internet dalam 3 menit:
+1. Simpan kode ke repository GitHub kamu.
+2. Buka **vercel.com** & login dengan akun GitHub.
+3. Klik tombol **Add New Project** > pilih repository kamu.
+4. Klik tombol **Deploy**.
+5. Selesai! Web kamu langsung memiliki domain online resmi: \`nama-proyek.vercel.app\` lengkap dengan HTTPS aman gratis!`,
+        tips: [
+          "Setiap kali kamu melakukan 'git push' ke GitHub, Vercel otomatis meng-update website online dalam beberapa detik!"
+        ]
+      }
+    ],
+    finalProject: {
+      title: "Final Capstone Project: Web Portal Berita & Blog Portofolio Fullstack Frontend",
+      description: "Membangun website lengkap siap produksi menggunakan Next.js App Router dan Tailwind CSS: Beranda dengan layout bersama (Navbar & Footer), Halaman Daftar Berita dengan Server Component data fetching, Halaman Detail Dinamis (/berita/[id]), Fitur Pencarian di sisi Client, dan ter-deploy online di Vercel.",
+      requirements: [
+        "Menggunakan Next.js App Router dengan layout bersama",
+        "Memiliki dynamic route (/artikel/[id])",
+        "Menggabungkan Server Component dan Client Component secara tepat",
+        "Desain 100% responsif di HP dan Laptop dengan Tailwind CSS",
+        "Ter-deploy online di Vercel dan link bisa dibuka publik"
+      ],
+      submissionTip: "Sertakan tautan repository GitHub dan tautan domain live .vercel.app sebagai portofolio kelulusan siswa."
     }
   }
 ];
 
 export const CHEATSHEETS = [
   {
-    category: "CSS Engine & Specificity",
+    category: "HTML5 Elemen & Semantik",
     items: [
-      { code: "isolation: isolate;", desc: "Menciptakan Stacking Context baru untuk mengisolasi z-index anak" },
-      { code: "flex: 1 1 0%;", desc: "flex-grow: 1, flex-shrink: 1, basis: 0 (distribusi ruang sama rata)" },
-      { code: "flex-shrink: 0;", desc: "Mengunci elemen agar TIDAK BOLEH menyusut/gepeng saat sempit" },
-      { code: "repeat(auto-fit, minmax(280px, 1fr))", desc: "Grid responsif otomatis 1 sampai n kolom tanpa media query" },
-      { code: "will-change: transform;", desc: "Memberi tahu GPU untuk memindahkan rendering ke layer compositing terpisah" }
+      { code: "<header> & <nav>", desc: "Area kepala website dan menu navigasi" },
+      { code: "<main> & <section>", desc: "Konten utama halaman dan seksi tematik" },
+      { code: "<article> & <aside>", desc: "Konten mandiri (kartu berita) dan sidebar" },
+      { code: "<details> & <summary>", desc: "Accordion buka-tutup native tanpa JavaScript" },
+      { code: "<dialog id='x'>", desc: "Native modal dialog (dialog.showModal())" },
+      { code: "<picture> & <source>", desc: "Gambar responsif dengan format AVIF/WebP" }
     ]
   },
   {
-    category: "JavaScript Engine & Asynchronous",
+    category: "HTML Form & Validasi",
     items: [
-      { code: "queueMicrotask(() => {})", desc: "Menjadwalkan callback dengan prioritas tinggi sebelum render frame berikutnya" },
-      { code: "structuredClone(obj)", desc: "Deep clone objek/array secara aman tanpa bug nested reference spread" },
-      { code: "new AbortController()", desc: "Membatalkan sinyal request fetch HTTP saat input baru masuk / unmount" },
-      { code: "Promise.allSettled([...])", desc: "Menjalankan banyak promise paralel tanpa gugur jika 1 gagal" },
-      { code: "Object.freeze(obj)", desc: "Mencegah mutasi properti tingkat pertama pada objek" }
+      { code: "<label for='id'>", desc: "Menghubungkan label teks ke input (wajib a11y)" },
+      { code: "<input type='email' required>", desc: "Validasi otomatis format email dan kolom wajib" },
+      { code: "<input list='id-datalist'>", desc: "Input teks dengan saran autocomplete rekomendasi" },
+      { code: "<select> & <option>", desc: "Menu dropdown pilihan" },
+      { code: "pattern='[0-9]{10}'", desc: "Validasi input menggunakan ekspresi Regex" }
     ]
   },
   {
-    category: "Tailwind v4 & CVA Patterns",
+    category: "CSS Layout, Flex & Grid",
     items: [
-      { code: "cn(...inputs)", desc: "twMerge(clsx(inputs)) untuk resolusi bentrok class dinamis" },
-      { code: "@theme { --color-brand: ... }", desc: "Konfigurasi token design system native di Tailwind v4" },
-      { code: "[&>p]:text-slate-600", desc: "Arbitrary child selector untuk menata seluruh tag p anak langsung" },
-      { code: "group-hover/card:scale-105", desc: "Named nested group state untuk interaksi bersarang" },
-      { code: "peer-checked:bg-blue-600", desc: "Mengubah style saudara saat checkbox/radio aktif" }
+      { code: "*, *::before { box-sizing: border-box; }", desc: "Reset wajib agar padding tidak membengkakkan elemen" },
+      { code: "display: flex; gap: 16px;", desc: "Flexbox container dengan jarak bersih antar anak" },
+      { code: "flex: 1 1 250px;", desc: "flex-grow: 1, flex-shrink: 1, basis: 250px" },
+      { code: "flex-shrink: 0;", desc: "Mengunci elemen agar tidak gepeng saat sempit" },
+      { code: "repeat(auto-fit, minmax(280px, 1fr))", desc: "Grid 2D responsif otomatis tanpa media query" },
+      { code: "position: sticky; top: 0;", desc: "Elemen menempel saat halaman di-scroll" }
     ]
   },
   {
-    category: "React Engine & Hooks",
+    category: "CSS Modern & Animasi",
     items: [
-      { code: "useReducer(reducer, initial)", desc: "State machine deklaratif untuk transaksi data kompleks" },
-      { code: "useRef(null)", desc: "Menyimpan referensi DOM atau mutable value tanpa memicu re-render" },
-      { code: "useCallback(fn, deps)", desc: "Mengunci identitas fungsi untuk props anak yang di-memoize" },
-      { code: "React.memo(Component)", desc: "Mencegah re-render jika props tidak berubah secara referensial" },
-      { code: "key={item.id}", desc: "Identitas stabil mutlak untuk algoritma diffing rekonsiliasi React" }
+      { code: "font-size: clamp(1rem, 4vw, 2.5rem);", desc: "Tipografi responsif halus tanpa media query" },
+      { code: "min-height: 100dvh;", desc: "Tinggi layar penuh akurat di HP (Dynamic Viewport)" },
+      { code: "transition: all 0.3s ease;", desc: "Transisi animasi perubahan style yang mulus" },
+      { code: "@keyframes putar { to { transform: rotate(360deg); } }", desc: "Animasi keyframes rotasi mandiri" },
+      { code: ":root { --warna: #2563eb; }", desc: "Mendeklarasikan CSS Variables native" }
     ]
   },
   {
-    category: "Next.js App Router Arsitektur",
+    category: "Tailwind & React & Next.js",
     items: [
-      { code: "async function Page()", desc: "Server Component bawaan: fetch data langsung tanpa useEffect / useState" },
-      { code: "'use client'", desc: "Menandai batas serialisasi untuk interaktivitas pengguna & React Hooks" },
-      { code: "'use server'", desc: "Menandai Server Action: mutasi data form langsung di Node.js server" },
-      { code: "revalidatePath('/path')", desc: "On-demand purge cache untuk memperbarui halaman seketika setelah mutasi" },
-      { code: "<Suspense fallback={<Skeleton />}>", desc: "Streaming UI: render layout instan tanpa menunggu data lambat" },
-      { code: "export async function generateMetadata()", desc: "SEO dinamis untuk halaman dinamis /artikel/[id]" }
+      { code: "p-4 / px-6 / py-2", desc: "Padding skala 4px (p-4 = 16px)" },
+      { code: "cn('p-4', className)", desc: "twMerge + clsx untuk resolusi bentrok class" },
+      { code: "const [data, setData] = useState(0)", desc: "State management interaktif di React" },
+      { code: "useEffect(() => {}, [])", desc: "Efek samping dijalankan 1x saat buka halaman" },
+      { code: "async function Page()", desc: "Server Component: data fetching langsung di server" },
+      { code: "<Link href='/about'>", desc: "Navigasi instan Next.js tanpa refresh browser" }
     ]
   }
 ];
